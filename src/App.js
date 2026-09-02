@@ -1042,11 +1042,11 @@ setDualConfig(camera.dual ?? {
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-slate-900 p-2 rounded-lg text-white">
+            <div className="bg-orange-500 p-2 rounded-lg text-white">
               <Server size={16} />
             </div>
             <div>
-              <p className="text-[9px] font-black text-blue-600 uppercase leading-none mb-1">Active Recorder</p>
+              <p className="text-[9px] font-black text-slate-600 uppercase leading-none mb-1">Active Recorder</p>
               <h1 className="text-sm font-black text-slate-800 leading-none">{selectedRecorder.name||"-"}</h1>
             </div>
           </div>
@@ -1060,11 +1060,11 @@ setDualConfig(camera.dual ?? {
             </div>
             <div className="text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase block">Available Storage</span>
-              <span className="text-sm font-black text-emerald-600">{totals.usableTB.toFixed(1)} <span className="text-[9px]">TB</span></span>
+              <span className="text-sm font-black text-black-600">{totals.usableTB.toFixed(1)} <span className="text-[9px] opacity-30">TB</span></span>
             </div>
             <div className="text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Throughput</span>
-              <span className={`text-sm font-black ${totals.maxThroughputMbps > selectedRecorder.maxMbps ? 'text-rose-500' : 'text-blue-600'}`}>
+              <span className={`text-sm font-black ${totals.maxThroughputMbps > selectedRecorder.maxMbps ? 'text-rose-500' : 'text-black-600'}`}>
                 {totals.maxThroughputMbps.toFixed(0)} <span className="text-[10px] opacity-30">/ {selectedRecorder.maxMbps} Mbps</span>
               </span>
             </div>
@@ -1083,17 +1083,17 @@ setDualConfig(camera.dual ?? {
 </button>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-4 bg-slate-900 text-white px-4 py-1.5 rounded-lg shadow-md">
+            <div className="flex items-center gap-4 bg-[#F58026] text-white px-4 py-1.5 rounded-lg shadow-md">
                 <div className="text-center">
          
-                    <p className="text-[8px] font-bold text-slate-400 uppercase">Est. Retention</p>
-                    <p className={`text-sm font-black ${totals.estimatedDays < targetDays ? 'text-rose-400' : 'text-blue-400'}`}>
-                    {totals.estimatedDays.toFixed(0)} <span className="text-[9px] font-normal text-white">Days</span>
+                    <p className="text-[8px] font-bold text-white uppercase opacity-50">Est. Retention</p>
+                    <p className={`text-sm font-black ${totals.estimatedDays < targetDays ? 'text-rose-600' : 'text-white'}`}>
+                    {totals.estimatedDays.toFixed(0)} <span className="text-[9px] font-normal text-white opacity-50">Days</span>
                     </p>
                 </div>
                 <div className="w-px h-6 bg-slate-700"></div>
                 <div className="text-center">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase">Target</p>
+                    <p className="text-[8px] font-bold text-white uppercase opacity-50">Target</p>
                     <p className="text-sm font-black">{targetDays} <span className="text-[9px] font-normal opacity-50">Days</span></p>
                 </div>
             </div>
@@ -1117,7 +1117,7 @@ setDualConfig(camera.dual ?? {
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Recorder Model</label>
                 <select 
-                    className="w-full bg-blue-50/50 border border-blue-100 rounded-lg p-2 text-xs font-bold text-blue-700 outline-none" 
+                    className="w-full bg-slate-50/50 border border-slate-100 rounded-lg p-2 text-xs font-bold text-black-700 outline-none" 
                     value={selectedRecorder.name||"-"} 
                     onChange={handleNvrChange}
                 >
@@ -1130,7 +1130,7 @@ setDualConfig(camera.dual ?? {
                   <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">HDD Qty (EA)</label>
                   
                     <select
-  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold"
+  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none" 
   value={hddQty}
   onChange={e => setHddQty(Number(e.target.value))}
 >
@@ -1176,7 +1176,7 @@ setDualConfig(camera.dual ?? {
 )}
 
   <select
-    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
     value={hddSize}
     onChange={e => setHddSize(Number(e.target.value))}
   >
@@ -1208,7 +1208,7 @@ setDualConfig(camera.dual ?? {
                   </div>
                 )}
     <select
-  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold"
+  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
   value={raidOption}
   onChange={e => setRaidOption(e.target.value)}
 >
@@ -1227,27 +1227,27 @@ setDualConfig(camera.dual ?? {
               <div className="pt-2">
                 <div className="flex justify-between items-center mb-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">Target Retention</label>
-                  <span className="text-[10px] font-black text-blue-600">{targetDays} Days</span>
+                  <span className="text-[10px] font-black text-orange-600">{targetDays} Days</span>
                 </div>
-                <input type="range" min="1" max="120" value={targetDays} onChange={e => setTargetDays(Number(e.target.value))} className="w-full h-1 bg-slate-100 rounded-lg appearance-none accent-blue-600 cursor-pointer" />
+                <input type="range" min="1" max="120" value={targetDays} onChange={e => setTargetDays(Number(e.target.value))} className="w-full h-1 bg-slate-100 rounded-lg appearance-none accent-orange-600 cursor-pointer" />
               </div>
             </div>
           </section>
 
           {/* Metrics Visualized */}
-          <div className="bg-slate-900 rounded-2xl p-5 text-white shadow-lg space-y-6">
+          <div className="bg-[#F58026] rounded-2xl p-5 text-white shadow-lg space-y-6">
              <div>
                <div className="flex items-center justify-between mb-2">
-                 <span className="text-[9px] font-black uppercase text-slate-500">Storage Usage (Est.)</span>
-                 <Database size={14} className="text-blue-500" />
+                 <span className="text-[9px] font-black uppercase text-white opacity-70">Storage Usage (Est.)</span>
+                 <Database size={14} className="text-white-500 opacity-70" />
                </div>
                <div className="flex justify-between items-end mb-2">
-                  <p className="text-xl font-black">{(totals.totalDailyGB * targetDays / 1024).toFixed(1)} <span className="text-xs font-normal opacity-40">TB Required</span></p>
-                  <p className="text-[10px] font-bold text-slate-400">Target {targetDays}D</p>
+                  <p className="text-xl font-bold font-white">{(totals.totalDailyGB * targetDays / 1024).toFixed(1)} <span className="text-xs font-normal opacity-70">TB Required</span></p>
+                  <p className="text-[10px] font-bold text-white opacity-70">Target {targetDays}D</p>
                </div>
-               <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+               <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full transition-all duration-500 ${totals.estimatedDays < targetDays ? 'bg-rose-500' : 'bg-emerald-500'}`} 
+                    className={`h-full transition-all duration-500 ring-1 ring-inset ${ totals.estimatedDays < targetDays ? 'bg-rose-300 ring-rose-600': 'bg-emerald-300 ring-emerald-600'}`}
                     style={{width: `${Math.min(100, (totals.totalDailyGB * targetDays / 1024) / totals.usableTB * 100)}%`}}
                   ></div>
                </div>
@@ -1255,16 +1255,16 @@ setDualConfig(camera.dual ?? {
 
              <div>
                <div className="flex items-center justify-between mb-2">
-                 <span className="text-[9px] font-black uppercase text-slate-500">Bandwidth Load</span>
+                 <span className="text-[9px] font-black uppercase text-white opacity-70">Bandwidth Load</span>
                  <TrendingUp size={14} className="text-amber-500" />
                </div>
                <div className="flex justify-between items-end mb-2">
-                  <p className="text-xl font-black">{totals.maxThroughputMbps.toFixed(0)} <span className="text-xs font-normal opacity-40">Mbps</span></p>
-                  <p className="text-[10px] font-bold text-slate-400">{(totals.maxThroughputMbps / selectedRecorder.maxMbps * 100).toFixed(0)}%</p>
+                  <p className="text-xl font-bold font-white">{totals.maxThroughputMbps.toFixed(0)} <span className="text-xs font-normal opacity-70">Mbps</span></p>
+                  <p className="text-[10px] font-bold text-white opacity-70">{(totals.maxThroughputMbps / selectedRecorder.maxMbps * 100).toFixed(0)}%</p>
                </div>
-               <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+               <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full transition-all duration-500 ${totals.maxThroughputMbps > selectedRecorder.maxMbps ? 'bg-rose-500' : 'bg-amber-500'}`} 
+                    className={`h-full transition-all duration-500 ring-1 ring-inset ${totals.maxThroughputMbps > selectedRecorder.maxMbps? 'bg-rose-300 ring-rose-600': 'bg-blue-300 ring-blue-600'}`}
                     style={{width: `${Math.min(100, totals.maxThroughputMbps / selectedRecorder.maxMbps * 100)}%`}}
                   ></div>
                </div>
@@ -1285,7 +1285,7 @@ setDualConfig(camera.dual ?? {
             <div className="flex items-center justify-between mb-2">
 <div className="flex items-center gap-3">
   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-    editingId ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600'
+    editingId ? 'bg-blue-600 text-white' : 'bg-orange-50 text-orange-600'
   }`}>
     {editingId ? <Edit2 size={16} /> : <Camera size={18} />}
   </div>
@@ -1306,7 +1306,7 @@ setDualConfig(camera.dual ?? {
       onChange={e => setGroupTitle(e.target.value)}
       className="
         w-36
-        bg-slate-100
+        bg-slate-50
         border border-slate-200
         rounded-md
         px-2 py-1
@@ -1314,7 +1314,7 @@ setDualConfig(camera.dual ?? {
         font-bold
         text-slate-500
         outline-none
-        focus:ring-1 focus:ring-blue-500
+        focus:ring-1 focus:ring-orange-500
       "
     />
   </div>
@@ -1649,7 +1649,7 @@ setDualConfig(camera.dual ?? {
             <div className="flex gap-3">
               <button 
                 onClick={handleAddOrUpdateCamera} 
-                className={`flex-1 py-3.5 rounded-xl font-black text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 uppercase ${editingId ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-900 hover:bg-black text-white'}`}
+                className={`flex-1 py-3.5 rounded-xl font-black text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 uppercase ${editingId ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-[#F58026] hover:bg-[#D96F1F] text-white'}`}
               >
                 {editingId ? <><Save size={16} /> Update Group</> : <><Plus size={16} /> Add to list</>}
               </button>
@@ -1672,7 +1672,7 @@ setDualConfig(camera.dual ?? {
   </span>
 
   <div className="flex items-center gap-2 text-[10px] font-black">
-    <span className="text-blue-600">
+    <span className="text-back-600">
       {cameras.length} Groups
     </span>
     <span className="text-slate-300">·</span>
