@@ -1,65 +1,37 @@
 export const RECORDER_LIST = {
   default: {
-    CUSTOMER_NAME: "BRAND",
-    BRAND: "IDIS",
-    LOGO_TEXT: "IDIS Storage Calculator",
-
     NVR_MODELS: [
-        { name: "DR-8564", supportDualTrack: false, recorderType :"NVR",  ch: 64, hdd: 8, evenHddOnly : true, raids: ["None", "RAID1", "RAID5", "RAID10"], maxMbps: 400   },
-        { name: "DR-8532", supportDualTrack: true, recorderType :"NVR",  ch: 32, hdd: 8, evenHddOnly : true, raids: ["None", "RAID1", "RAID5", "RAID6", "RAID10"], maxMbps: 230 },
-        { name: "DR-8516", supportDualTrack: true, recorderType :"NVR",  ch: 16, hdd: 8, evenHddOnly : true, raids: ["None", "RAID1", "RAID5", "RAID6", "RAID10"], maxMbps: 180 },
-        { name: "DR-6532", supportDualTrack: true, recorderType :"NVR",  ch: 32, hdd: 6, evenHddOnly : false, raids: ["None", "RAID1"], maxMbps: 230 },
-        { name: "DR-6516", supportDualTrack: true, recorderType :"NVR",  ch: 16, hdd: 6, evenHddOnly : false, raids: ["None", "RAID1"], maxMbps: 180 },
-        { name: "DR-6508", supportDualTrack: true, recorderType :"NVR",  ch: 8, hdd: 6, evenHddOnly : false,  raids: ["None", "RAID1"], maxMbps: 140 },
-        { name: "DR-3516", supportDualTrack: true, recorderType :"NVR",  ch: 16, hdd: 4, evenHddOnly : false,  raids: ["None"], maxMbps: 180 },
-        { name: "DR-2516", supportDualTrack: true, recorderType :"NVR",  ch: 16, hdd: 2, evenHddOnly : false,  raids: ["None"], maxMbps: 180 },
-        { name: "DR-2508", supportDualTrack: true, recorderType :"NVR",  ch: 8, hdd: 2, evenHddOnly : false,  raids: ["None"], maxMbps: 140 },
-        { name: "DR-2504", supportDualTrack: true, recorderType :"NVR",  ch: 4, hdd: 2, evenHddOnly : false,  raids: ["None"], maxMbps: 70 },
-        { name: "DR-1508", supportDualTrack: true, recorderType :"NVR",  ch: 8, hdd: 1, evenHddOnly : false,  raids: ["None"], maxMbps: 40 },
-        { name: "DR-1504", supportDualTrack: true, recorderType :"NVR",  ch: 4, hdd: 1, evenHddOnly : false,  raids: ["None"], maxMbps: 20 },
-        { name: "IR-310D", supportDualTrack: false, recorderType :"NVR",  ch: 64, hdd: 8, evenHddOnly : false,  raids: ["None", "RAID1", "RAID5", "RAID10"], maxMbps: 400   },
-
+        { name: "LDVR4K",  ch: 16, hdd: 2, evenHddOnly : false, raids: ["None", "RAID1"], maxMbps: 160  },
     ],
   },
 };
 
-
 export const CAMERA_TYPES = {
-    "2MP (IP Camera)": [
+  "RVS-CAM-DOME-2": [
     { label: "1920x1080", value: "1920x1080" },
     { label: "1280x720", value: "1280x720" },
     { label: "640x360", value: "640x360" },
     { label: "352x240", value: "352x240" },
   ],
-  "4MP (IP Camera)": [
-    { label: "2592x1456", value: "2592x1456" },
+  "RVS-CAM-WEDGE-2": [
     { label: "1920x1080", value: "1920x1080" },
     { label: "1280x720", value: "1280x720" },
     { label: "640x360", value: "640x360" },
+    { label: "352x240", value: "352x240" },
   ],
-  "5MP (IP Camera)": [
-    { label: "2592x1944", value: "2592x1944" },
-    { label: "1920x1440", value: "1920x1440" },
-    { label: "1280x960", value: "1280x960" },
-    { label: "640x480", value: "640x480" },
-  ],
-  "6MP (IP Camera)": [
-    { label: "3328x1872", value: "3328x1872" },
+  "RVS-CAM-MODULE-2": [
     { label: "1920x1080", value: "1920x1080" },
     { label: "1280x720", value: "1280x720" },
     { label: "640x360", value: "640x360" },
+    { label: "352x240", value: "352x240" },
   ],
-  "8MP (IP Camera)": [
-    { label: "3840x2160", value: "3840x2160" },
+  "RVS-CAM-CVT": [
     { label: "1920x1080", value: "1920x1080" },
     { label: "1280x720", value: "1280x720" },
     { label: "640x360", value: "640x360" },
+    { label: "352x240", value: "352x240" },
   ],
-  "5MP Fisheye_In (IP Camera)": [
-    { label: "2560x2048", value: "2560x2048" },
-    { label: "640x512", value: "640x512" },
-  ],
-  "5MP Fisheye_Out (IP Camera)": [
+  "RVS-CAM-3605MP-2": [
     { label: "2560x2048", value: "2560x2048" },
     { label: "2560x1024", value: "2560x1024" },
     { label: "1920x1536", value: "1920x1536" },
@@ -67,31 +39,19 @@ export const CAMERA_TYPES = {
     { label: "640x512", value: "640x512" },
     { label: "640x256", value: "640x256" },
   ],
-  "12MP Fisheye (IP Camera)": [
-    { label: "2944x2944", value: "2944x2944" },
-    { label: "2944x1472", value: "2944x1472" },
-    { label: "2208x2208", value: "2208x2208" },
-    { label: "1472x1472", value: "1472x1472" },
-    { label: "768x768", value: "768x768" },
-    { label: "736x736", value: "736x736" },
-    { label: "768x384", value: "768x384" },
-  ],
 };
 
 export const DUAL_ALLOWED_RESOLUTIONS = {
-  "2MP (IP Camera)": ["640x360", "352x240"],
-  "4MP (IP Camera)": ["640x360"],
-  "5MP (IP Camera)": ["640x480"],
-  "6MP (IP Camera)": ["640x360"],
-  "8MP (IP Camera)": ["640x360"],
-  "5MP Fisheye_In (IP Camera)": ["640x512"],
-  "5MP Fisheye_Out (IP Camera)": ["640x512", "640x256"],
-  "12MP Fisheye (IP Camera)": ["768x768", "736x736", "768x384"],
+  "RVS-CAM-DOME-2": ["640x360", "352x240"],
+  "RVS-CAM-WEDGE-2": ["640x360", "352x240"],
+  "RVS-CAM-MODULE-2": ["640x360", "352x240"],
+  "RVS-CAM-CVT": ["640x360", "352x240"],
+  "RVS-CAM-3605MP-2": ["640x512", "640x256"],
 };
 
 export const QUALITY_INDEX = { "Basic": 0, "Standard": 1, "High": 2, "Very High": 3 };
 
-export const HDD_SIZE_OPTIONS = [  2, 4, 6, 8, 10, 12, 14, 18]; // TB
+export const HDD_SIZE_OPTIONS = [  1, 2, 4, 8, 16 ]; // TB
 
 export const FPS_POOL = {
   NVR: [30, 15, 10, 5, 4, 3, 2, 1],
