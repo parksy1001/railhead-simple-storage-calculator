@@ -35,6 +35,9 @@ import {
   X,
   TrendingUp
 } from 'lucide-react';
+
+const SHOW_EVENT_CONFIG = false;
+
 const getFpsOptions = (recorderModel) => {
   const pool = FPS_POOL["NVR"] || [];
   const maxFps = recorderModel?.maxFps ?? Math.max(...pool);
@@ -651,7 +654,7 @@ const [timeConfig, setTimeConfig] = useState({
   fps: 15,
   qual: "Standard",
   codec: "H.265",
-  hours: 22
+  hours: 24
 });
 
 const [eventConfig, setEventConfig] = useState({
@@ -659,7 +662,7 @@ const [eventConfig, setEventConfig] = useState({
   fps: 30,
   qual: "High",
   codec: "H.265",
-  hours: 2
+  hours: 0
 });
 
 const [dualConfig, setDualConfig] = useState({
@@ -673,7 +676,7 @@ const [dualConfig, setDualConfig] = useState({
   const [showRaidTooltip, setShowRaidTooltip] = useState(false);
   const [showStorageTooltip, setShowStorageTooltip] = useState(false);
   const [useIC, setUseIC] = useState(false); // ✅ Intelligent Codec (Group 단위)
-  const [useDualTrackRecording, setUseDualTrackRecording] = useState(false);
+  const [useDualTrackRecording, setUseDualTrackRecording] = useState(true);
   
   useEffect(() => {
   const options = getFpsOptions(selectedRecorder);
@@ -733,7 +736,7 @@ useEffect(() => {
   setCamType(defaultCamType);
   setCamQty(1);
 
-  setUseDualTrackRecording(false);
+  setUseDualTrackRecording(true);
   setUseIC(false);
 
   setTimeConfig({
@@ -741,7 +744,7 @@ useEffect(() => {
     fps: 15,
     qual: "Standard",
     codec: "H.265",
-    hours: 22
+    hours: 24
   });
 
   setEventConfig({
@@ -749,7 +752,7 @@ useEffect(() => {
     fps: 30,
     qual: "High",
     codec: "H.265",
-    hours: 2
+    hours: 0
   });
 
   setDualConfig({
@@ -1117,7 +1120,7 @@ setDualConfig(camera.dual ?? {
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Recorder Model</label>
                 <select 
-                    className="w-full bg-slate-50/50 border border-slate-100 rounded-lg p-2 text-xs font-bold text-black-700 outline-none" 
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-black-700 outline-none" 
                     value={selectedRecorder.name||"-"} 
                     onChange={handleNvrChange}
                 >
@@ -1324,7 +1327,7 @@ setDualConfig(camera.dual ?? {
               <div className="ml-4 flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
                 <div className="flex items-center gap-2 px-3 py-1.5">
                   <span className="text-[9px] font-black text-slate-400 uppercase">Camera</span>
-                  <select className="bg-transparent text-xs font-bold outline-none w-[100px] truncate" value={camType} 
+                  <select className="bg-transparent text-xs font-bold outline-none w-[150px] truncate" value={camType} 
                   onChange={e => {
   const nextCamType = e.target.value;
 
@@ -1383,7 +1386,7 @@ setDualConfig(camera.dual ?? {
       type="checkbox"
       checked={useIC}
       onChange={e => setUseIC(e.target.checked)}
-      className="accent-emerald-600"
+      className="accent-orange-600"
     />
     <span className="text-[10px] font-black text-slate-600 uppercase">
       Use Intelligent Codec
@@ -1405,7 +1408,7 @@ setDualConfig(camera.dual ?? {
               <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
                 <div className="col-span-2 flex items-center gap-2">
                   <Clock size={14} className="text-blue-500" />
-                  <span className="text-xs font-black text-blue-600 uppercase">Time</span>
+                  <span className="text-xs font-black text-blue-600 uppercase">HQ</span>
                 </div>
                 <div className="col-span-2 px-2">
                   <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={timeConfig.codec} onChange={e => setTimeConfig({...timeConfig, codec: e.target.value})}>
@@ -1478,6 +1481,7 @@ setDualConfig(camera.dual ?? {
 
               <div className="h-px bg-slate-200 mx-4"></div>
 
+{SHOW_EVENT_CONFIG && (
               <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
                 <div className="col-span-2 flex items-center gap-2">
                   <Zap size={14} className="text-amber-500" />
@@ -1550,16 +1554,16 @@ setDualConfig(camera.dual ?? {
                 <div className="col-span-1 text-right">
                   <span className="text-[10px] font-black text-slate-600">{calcMbps(eventConfig, useIC).toFixed(1)}</span>
                 </div>
-              </div>
+              </div>)}
               {useDualTrackRecording && (
   <>
-    <div className="h-px bg-slate-200 mx-4"></div>
+    {/* <div className="h-px bg-slate-200 mx-4"></div> */}
 
     <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
       <div className="col-span-2 flex items-center gap-2">
         <Layers size={14} className="text-purple-500" />
         <span className="text-xs font-black text-purple-600 uppercase">
-          Dual
+          LT
         </span>
       </div>
 
@@ -1739,7 +1743,7 @@ const dailyGB = (((tMbps * 3600 * c.time.hours) + (eMbps * 3600 * c.event.hours)
   </span>
 
   {c.useIC && (
-  <span className="text-[9px] font-bold text-emerald-600 mt-0.5">
+  <span className="text-[9px] font-bold text-orange-600 mt-0.5">
     - Use Intelligent Codec</span>
 
 )}
@@ -1757,29 +1761,31 @@ const dailyGB = (((tMbps * 3600 * c.time.hours) + (eMbps * 3600 * c.event.hours)
   </div>
 
   <SummaryRow
-    label="TIME"
+    label="HQ"
     icon={<Clock size={10} />}
     color="text-blue-500"
     cfg={c.time}
     mbps={tMbps}
   />
 
-  <SummaryRow
-    label="EVENT"
-    icon={<Zap size={10} />}
-    color="text-amber-500"
-    cfg={c.event}
-    mbps={eMbps}
-  />
-{c.useDualTrackRecording && (
-  <SummaryRow
-    label="DUAL"
-    icon={<Layers size={10} />}
-    color="text-purple-500"
-    cfg={c.dual}
-    mbps={dMbps}
-  />
-)}
+  {SHOW_EVENT_CONFIG && (
+    <SummaryRow
+      label="EVENT"
+      icon={<Zap size={10} />}
+      color="text-amber-500"
+      cfg={c.event}
+      mbps={eMbps}
+    />
+  )}
+  {c.useDualTrackRecording && (
+    <SummaryRow
+      label="LT"
+      icon={<Layers size={10} />}
+      color="text-purple-500"
+      cfg={c.dual}
+      mbps={dMbps}
+    />
+  )}
 </div>
                           </div>
                        </div>
