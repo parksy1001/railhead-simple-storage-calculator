@@ -635,7 +635,7 @@ setDualConfig(prev => {
 
 
   const [raidOption, setRaidOption] = useState("None");
-  const [hddSize, setHddSize] = useState(4);
+  const [hddSize, setHddSize] = useState(2);
   const [hddQty, setHddQty] = useState(1);
   const [targetDays, setTargetDays] = useState(30);
   const [cameras, setCameras] = useState([]);
@@ -1031,15 +1031,6 @@ setDualConfig(camera.dual ?? {
   
   };
 
-  const handleClearAll = () => {
-    if (window.confirm("Are you sure you want to reset all settings?")) {
-      setCameras([]);
-      setHddQty(1);
-      setRaidOption("None");
-      setActiveSceneId("");
-    }
-  };
-
   if (!selectedRecorder) {
   return (
     <div className="min-h-screen flex items-center justify-center text-slate-400">
@@ -1122,9 +1113,6 @@ setDualConfig(camera.dual ?? {
                 <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                     <Settings2 size={14} /> System Setup
                 </h2>
-                <button onClick={handleClearAll} className="text-slate-300 hover:text-slate-600 transition-colors">
-                    <RotateCcw size={14} />
-                </button>
             </div>
             <div className="space-y-4">
               <div>
@@ -1161,33 +1149,7 @@ setDualConfig(camera.dual ?? {
     <label className="text-[9px] font-black text-slate-400 uppercase">
       Size (GB/TB)
     </label>
-
-    <button
-      type="button"
-      onMouseEnter={() => setShowStorageTooltip(true)}
-      onMouseLeave={() => setShowStorageTooltip(false)}
-      className="text-red-600"
-    >
-      <Info size={10} />
-    </button>
   </div>
-
-{showStorageTooltip && (
-  <div className="absolute bottom-full left-0 mb-2 w-72 z-50 bg-slate-800 text-white text-[10px] font-bold p-3 rounded-lg shadow-xl leading-relaxed">
-
-    <div className="text-blue-400 font-black text-[11px] mb-2">
-      Size Info
-    </div>
-
-    <div className="font-normal text-white text-[10px] leading-relaxed">
-      Supported storage drive sizes vary depending on the NVR model.
-      Please refer to the Product Compatibility section in the Partner Portal
-      to select a compatible drive size.
-    </div>
-
-  </div>
-)}
-
   <select
     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
     value={hddSize}
