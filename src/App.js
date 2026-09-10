@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  RECORDER_LIST,
-  CAMERA_TYPES,
-  DUAL_ALLOWED_RESOLUTIONS,
-  QUALITY_INDEX, HDD_SIZE_OPTIONS,
+  RECORDER_MODEL,
+  CAMERA_MODEL,
+  QUALITY_INDEX,
+  HDD_SIZE_OPTIONS,
   FPS_POOL,
   FPS_SCALE,
   RES_BIAS,
   BITRATE_TABLE,
-  RAID_MIN_DISKS
+  RAID_MIN_DISKS,
+  RAID_INFO,
+  QUALITY_MULTIPLIER,
+  PRESET_SCENES
 } from "./const";
 
 import * as XLSX from "xlsx";
@@ -38,8 +41,30 @@ import {
 
 const SHOW_EVENT_CONFIG = false;
 
+const cameraTypes = Object.fromEntries(
+  Object.entries(CAMERA_MODEL).map(
+    ([cameraType, preset]) => [
+      cameraType,
+      preset.resolutions.map((value) => ({
+        label: value,
+        value,
+      })),
+    ]
+  )
+);
+
+const dualAllowedResolutions = Object.fromEntries(
+  Object.entries(CAMERA_MODEL).map(
+    ([cameraType, preset]) => [
+      cameraType,
+      [...preset.dualAllowed],
+    ]
+  )
+);
+
+
 const getFpsOptions = (recorderModel) => {
-  const pool = FPS_POOL["NVR"] || [];
+  const pool = FPS_POOL;
   const maxFps = recorderModel?.maxFps ?? Math.max(...pool);
 
   return pool.filter(fps => fps <= maxFps);
@@ -48,9 +73,6 @@ const getFpsOptions = (recorderModel) => {
 const getGroupLabel = (group, index) => {
   return group.title?.trim() || "";
 };
-
-const RECORDER = RECORDER_LIST.default;
-
 
 const SummaryRow = ({ label, icon, color, cfg, mbps}) => (
   <div className="grid grid-cols-12 text-[9px] font-bold text-slate-500 py-0.5">
@@ -127,7 +149,7 @@ const calcGroupPeakMbps = (group) => {
 
 const isDualResolutionAllowed = (camType, resValue) => {
 
-  const allowed = DUAL_ALLOWED_RESOLUTIONS[camType];
+  const allowed = dualAllowedResolutions[camType];
   if (!allowed) return true;
 
   return allowed.includes(resValue);
@@ -135,32 +157,12 @@ const isDualResolutionAllowed = (camType, resValue) => {
 
 
 const getDefaultDualResolution = (camType) => {
-  const resList = CAMERA_TYPES[camType] || [];
+  const resList = cameraTypes[camType] || [];
 
-  const allowed = DUAL_ALLOWED_RESOLUTIONS[camType] || [];
+  const allowed = dualAllowedResolutions[camType] || [];
     return resList.find(r => allowed.includes(r.value)) || resList[0] || null;
 
 };
-
-const RAID_INFO = {
-  "None": "Uses all disk capacity independently. No data redundancy or protection is provided.",
-  "RAID1": "Mirrors data across disks to create an exact copy for redundancy. (50% usable capacity)",
-  "RAID5": "Distributes parity information across disks to tolerate a single disk failure. (N-1 usable capacity, minimum 4 disks required)",
-  "RAID6": "Uses dual parity to tolerate up to two simultaneous disk failures. (N-2 usable capacity, minimum 4 disks required)",
-  "RAID10": "Combines mirroring and striping to provide high performance and fault tolerance. (50% usable capacity, minimum 4 disks required)"
-};
-
-
-const QUALITY_MULTIPLIER = { "Very High": 1.2, "High": 1.0, "Standard": 0.8, "Basic": 0.5 };
-
-const PRESET_SCENES = [
-  { id: "Shopping", name: "Shopping Mall", time: {resIndex :0, fps: 30, qual: "High", codec: "H.265", hours: 4 }, event: {resIndex :0, fps: 30, qual: "Very High", codec: "H.265", hours: 8} },
-  { id: "Hotel/Casino", name: "Hetel/Casino", time: {resIndex :0, fps: 10, qual: "Very High", codec: "H.265", hours: 12 }, event: {resIndex :0, fps: 30, qual: "Very High", codec: "H.265", hours: 12 } } ,
-  { id: "Residence", name: "Residence",time: {resIndex :1,  fps: 10, qual: "High", codec: "H.265", hours: 6 }, event: {resIndex :0,  fps: 30, qual: "Very High", codec: "H.265", hours: 12 } },
-  { id: "Education", name: "Education",time: {resIndex :1,  fps: 10, qual: "High", codec: "H.265", hours: 6 }, event: {resIndex :0,  fps: 20, qual: "Very High", codec: "H.265", hours: 6 } }, 
-  { id: "Retail", name: "Retail",time: {resIndex :0,  fps: 10, qual: "Standard", codec: "H.265", hours: 4 }, event: {resIndex :0,  fps: 30, qual: "Very High", codec: "H.265", hours: 4 } }, 
-  { id: "Logistics", name: "Logistics",time: {resIndex :0,  fps: 10, qual: "Standard", codec: "H.265", hours: 10 }, event: {resIndex :0,  fps: 30, qual: "Very High", codec: "H.265", hours: 4 } } 
-];
 
 const getHddQtyOptions = (nvr) => {
   const max = nvr.hdd;
@@ -183,7 +185,7 @@ const getResPixels = (resStr) => {
 
 export default function App() {
 
-const recorderModels = RECORDER.NVR_MODELS;
+const recorderModels = RECORDER_MODEL;
 const [selectedRecorder, setSelectedRecorder] = useState(null);
 const [camType, setCamType] = useState("");
 const [camQty, setCamQty] = useState(1);
@@ -592,7 +594,7 @@ useEffect(() => {
 useEffect(() => {
   if (!camType) return;
 
-  const resList = CAMERA_TYPES[camType];
+  const resList = cameraTypes[camType];
   if (!resList || resList.length === 0) return;
 
   
@@ -642,7 +644,7 @@ const normalizeRes = (r) =>
   typeof r === "string" ? { label: r, value: r } : r;
 
 const getDefaultRes = () => {
-  const types = CAMERA_TYPES;
+  const types = cameraTypes;
   if (!types) return null;
   const firstType = Object.keys(types)[0];
   const r = types[firstType]?.[0];
@@ -722,12 +724,12 @@ const [dualConfig, setDualConfig] = useState({
 }, [selectedRecorder, hddQty, raidOption]);
 
 useEffect(() => {
-  const types = Object.keys(CAMERA_TYPES || {}).filter(type => {
+  const types = Object.keys(cameraTypes || {}).filter(type => {
     return true;
   });
 
   const defaultCamType = types[0] || "";
-  const defaultRes = CAMERA_TYPES[defaultCamType]?.[0] || null;
+  const defaultRes = cameraTypes[defaultCamType]?.[0] || null;
 
   setGroupTitle("Group 1");
   setNextGroupNumber(2);
@@ -841,7 +843,7 @@ const totals = useMemo(() => {
 
   const scene = PRESET_SCENES.find(s => s.id === sceneId);
   if (!scene) return;
-  const resList = CAMERA_TYPES[camType];
+  const resList = cameraTypes[camType];
   const pickRes = (idx) =>
     resList[Math.min(idx, resList.length - 1)];
 
@@ -1341,7 +1343,7 @@ setDualConfig(camera.dual ?? {
   }));
 }}
                   >
-                    {Object.keys(CAMERA_TYPES || {}).filter(type => {
+                    {Object.keys(cameraTypes || {}).filter(type => {
                       return true;
                     }).map(type => (
                     <option key={type} value={type}>
@@ -1416,11 +1418,11 @@ setDualConfig(camera.dual ?? {
                   </select>
                 </div>
                 <div className="col-span-3 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={timeConfig.res?.value} onChange={e => { const selected = CAMERA_TYPES[camType].find(r => r.value === e.target.value);
+                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={timeConfig.res?.value} onChange={e => { const selected = cameraTypes[camType].find(r => r.value === e.target.value);
                    setTimeConfig({ ...timeConfig, res: selected });
   }}
 >
-  {CAMERA_TYPES[camType]
+  {cameraTypes[camType]
     ?.map(r => (
       <option key={r.value} value={r.value}>
         {r.label}
@@ -1493,11 +1495,11 @@ setDualConfig(camera.dual ?? {
                   </select>
                 </div>
                 <div className="col-span-3 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={eventConfig.res?.value} onChange={e => { const selected = CAMERA_TYPES[camType].find(r => r.value === e.target.value);
+                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={eventConfig.res?.value} onChange={e => { const selected = cameraTypes[camType].find(r => r.value === e.target.value);
     setEventConfig({ ...eventConfig, res: selected });
   }}
 >
-  {CAMERA_TYPES[camType]
+  {cameraTypes[camType]
     ?.map(r => (
       <option key={r.value} value={r.value}>
         {r.label}
@@ -1583,11 +1585,11 @@ setDualConfig(camera.dual ?? {
           className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
           value={dualConfig.res?.value}
           onChange={e => {
-            const selected = CAMERA_TYPES[camType].find(r => r.value === e.target.value);
+            const selected = cameraTypes[camType].find(r => r.value === e.target.value);
             setDualConfig({ ...dualConfig, res: selected });
           }}
         >
-          {CAMERA_TYPES[camType]?.map(r => {
+          {cameraTypes[camType]?.map(r => {
             const disabled = !isDualResolutionAllowed(camType, r.value);
 
   return (
