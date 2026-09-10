@@ -25,7 +25,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
-  "homepage" : "https://parksy1001.github.io/idis-storage-calculator/",
+  "homepage" : "https://parksy1001.github.io/railhead-simple-storage-calculator/",
   "eslintConfig": {
     "extends": [
       "react-app",
