@@ -41,6 +41,14 @@ import {
 
 const SHOW_EVENT_CONFIG = false;
 
+const formatStorageSize = (sizeTB) => {
+  if (sizeTB < 1) {
+    return `${Math.round(sizeTB * 1024)} GB`;
+  }
+
+  return `${Number(sizeTB.toFixed(3))} TB`;
+};
+
 const cameraTypes = Object.fromEntries(
   Object.entries(CAMERA_MODEL).map(
     ([cameraType, preset]) => [
@@ -241,9 +249,9 @@ const exportToPDF = () => {
         "Total Throughput (Mbps)",
         `${totals.maxThroughputMbps.toFixed(0)} / ${selectedRecorder.maxMbps}`,
       ],
-      ["HDD", `${hddQty} EA × ${hddSize} TB`],
+      ["HDD", `${hddQty} EA × ${formatStorageSize(hddSize)}`],
       ["RAID Mode", raidOption],
-      ["Usable Storage (TB)", totals.usableTB.toFixed(1)],
+      ["Usable Storage", formatStorageSize(totals.usableTB)],
       ["Estimated Retention (Days)", totals.estimatedDays.toFixed(0)],
     ],
     theme: "grid",
@@ -412,9 +420,9 @@ const exportToExcel = () => {
     "Total Throughput (Mbps)",
     `${totals.maxThroughputMbps.toFixed(0)} / ${selectedRecorder.maxMbps}`,
   ]);
-  rows.push(["HDD", `${hddQty} EA × ${hddSize} TB`]);
+  rows.push(["HDD", `${hddQty} EA × ${formatStorageSize(hddSize)}`]);
   rows.push(["RAID Mode", raidOption]);
-  rows.push(["Usable Storage (TB)", totals.usableTB.toFixed(1)]);
+  rows.push(["Usable Storage", formatStorageSize(totals.usableTB)]);
   rows.push(["Estimated Retention (Days)", totals.estimatedDays.toFixed(0)]);
   rows.push([]);
 
@@ -1065,7 +1073,7 @@ setDualConfig(camera.dual ?? {
             </div>
             <div className="text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase block">Available Storage</span>
-              <span className="text-sm font-black text-black-600">{totals.usableTB.toFixed(1)} <span className="text-[9px] opacity-30">TB</span></span>
+              <span className="text-sm font-black text-black-600">{formatStorageSize(totals.usableTB)}</span>
             </div>
             <div className="text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Throughput</span>
@@ -1151,7 +1159,7 @@ setDualConfig(camera.dual ?? {
 <div className="relative">
   <div className="flex items-center gap-1 mb-1">
     <label className="text-[9px] font-black text-slate-400 uppercase">
-      Size (TB)
+      Size (GB/TB)
     </label>
 
     <button
@@ -1187,7 +1195,7 @@ setDualConfig(camera.dual ?? {
   >
                   {HDD_SIZE_OPTIONS.map(size => (
                     <option key={size} value={size}>
-                    {size} TB
+                    {formatStorageSize(size)}
                   </option>
                     ))}
                   </select>
@@ -1246,10 +1254,24 @@ setDualConfig(camera.dual ?? {
                  <span className="text-[9px] font-black uppercase text-white opacity-70">Storage Usage (Est.)</span>
                  <Database size={14} className="text-white-500 opacity-70" />
                </div>
-               <div className="flex justify-between items-end mb-2">
-                  <p className="text-xl font-bold font-white">{(totals.totalDailyGB * targetDays / 1024).toFixed(1)} <span className="text-xs font-normal opacity-70">TB Required</span></p>
-                  <p className="text-[10px] font-bold text-white opacity-70">Target {targetDays}D</p>
-               </div>
+               <div className="flex justify-between items-center mb-2">
+                <div>
+                  <p className="text-xl font-bold text-white">
+                    {(totals.totalDailyGB * targetDays / 1024).toFixed(1)}
+                    <span className="ml-1 text-xs font-normal opacity-70">
+                      TB Required
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-medium text-white/60"> ≈{" "}
+                    <span className="font-black text-white/90">
+                      {(totals.totalDailyGB * targetDays).toFixed(0)}
+                    </span>{" "}GB
+                  </p>
+                </div>
+                <p className="text-[10px] font-bold text-white opacity-70">
+                  Target {targetDays}D
+                  </p>
+                </div>
                <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
                   <div 
                     className={`h-full transition-all duration-500 ring-1 ring-inset ${ totals.estimatedDays < targetDays ? 'bg-rose-300 ring-rose-600': 'bg-emerald-300 ring-emerald-600'}`}
