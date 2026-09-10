@@ -1,21 +1,21 @@
 {
   "files": {
-    "main.css": "/idis-storage-calculator/static/css/main.2ca4df72.css",
-    "main.js": "/idis-storage-calculator/static/js/main.628a2ae7.js",
-    "static/js/239.bf48dcfa.chunk.js": "/idis-storage-calculator/static/js/239.bf48dcfa.chunk.js",
-    "static/js/213.2af809ae.chunk.js": "/idis-storage-calculator/static/js/213.2af809ae.chunk.js",
-    "static/js/455.ae3a8ede.chunk.js": "/idis-storage-calculator/static/js/455.ae3a8ede.chunk.js",
-    "static/js/453.9a667a85.chunk.js": "/idis-storage-calculator/static/js/453.9a667a85.chunk.js",
-    "index.html": "/idis-storage-calculator/index.html",
-    "main.2ca4df72.css.map": "/idis-storage-calculator/static/css/main.2ca4df72.css.map",
-    "main.628a2ae7.js.map": "/idis-storage-calculator/static/js/main.628a2ae7.js.map",
-    "239.bf48dcfa.chunk.js.map": "/idis-storage-calculator/static/js/239.bf48dcfa.chunk.js.map",
-    "213.2af809ae.chunk.js.map": "/idis-storage-calculator/static/js/213.2af809ae.chunk.js.map",
-    "455.ae3a8ede.chunk.js.map": "/idis-storage-calculator/static/js/455.ae3a8ede.chunk.js.map",
-    "453.9a667a85.chunk.js.map": "/idis-storage-calculator/static/js/453.9a667a85.chunk.js.map"
+    "main.css": "/railhead-simple-storage-calculator/static/css/main.2ca4df72.css",
+    "main.js": "/railhead-simple-storage-calculator/static/js/main.8c1cbd2b.js",
+    "static/js/239.bf48dcfa.chunk.js": "/railhead-simple-storage-calculator/static/js/239.bf48dcfa.chunk.js",
+    "static/js/213.2af809ae.chunk.js": "/railhead-simple-storage-calculator/static/js/213.2af809ae.chunk.js",
+    "static/js/455.ae3a8ede.chunk.js": "/railhead-simple-storage-calculator/static/js/455.ae3a8ede.chunk.js",
+    "static/js/453.9a667a85.chunk.js": "/railhead-simple-storage-calculator/static/js/453.9a667a85.chunk.js",
+    "index.html": "/railhead-simple-storage-calculator/index.html",
+    "main.2ca4df72.css.map": "/railhead-simple-storage-calculator/static/css/main.2ca4df72.css.map",
+    "main.8c1cbd2b.js.map": "/railhead-simple-storage-calculator/static/js/main.8c1cbd2b.js.map",
+    "239.bf48dcfa.chunk.js.map": "/railhead-simple-storage-calculator/static/js/239.bf48dcfa.chunk.js.map",
+    "213.2af809ae.chunk.js.map": "/railhead-simple-storage-calculator/static/js/213.2af809ae.chunk.js.map",
+    "455.ae3a8ede.chunk.js.map": "/railhead-simple-storage-calculator/static/js/455.ae3a8ede.chunk.js.map",
+    "453.9a667a85.chunk.js.map": "/railhead-simple-storage-calculator/static/js/453.9a667a85.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.2ca4df72.css",
-    "static/js/main.628a2ae7.js"
+    "static/js/main.8c1cbd2b.js"
   ]
 }
