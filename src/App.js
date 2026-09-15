@@ -11,19 +11,19 @@ import {
   RAID_MIN_DISKS,
   RAID_INFO,
   QUALITY_MULTIPLIER,
-  PRESET_SCENES
-} from "./const";
+  PRESET_SCENES,
+} from './const';
 
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { saveAs } from "file-saver";
-import { 
-  Server, 
-  Camera, 
-  HardDrive, 
-  Trash2, 
-  Plus, 
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { saveAs } from 'file-saver';
+import {
+  Server,
+  Camera,
+  HardDrive,
+  Trash2,
+  Plus,
   Activity,
   Settings2,
   Clock,
@@ -36,12 +36,14 @@ import {
   Edit2,
   Save,
   X,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 
 const SHOW_EVENT_CONFIG = false;
 
-const formatStorageSize = (sizeTB) => {
+const eslintTest = 123;
+
+const formatStorageSize = sizeTB => {
   if (sizeTB < 1) {
     return `${Math.round(sizeTB * 1024)} GB`;
   }
@@ -50,28 +52,20 @@ const formatStorageSize = (sizeTB) => {
 };
 
 const cameraTypes = Object.fromEntries(
-  Object.entries(CAMERA_MODEL).map(
-    ([cameraType, preset]) => [
-      cameraType,
-      preset.resolutions.map((value) => ({
-        label: value,
-        value,
-      })),
-    ]
-  )
+  Object.entries(CAMERA_MODEL).map(([cameraType, preset]) => [
+    cameraType,
+    preset.resolutions.map(value => ({
+      label: value,
+      value,
+    })),
+  ]),
 );
 
 const dualAllowedResolutions = Object.fromEntries(
-  Object.entries(CAMERA_MODEL).map(
-    ([cameraType, preset]) => [
-      cameraType,
-      [...preset.dualAllowed],
-    ]
-  )
+  Object.entries(CAMERA_MODEL).map(([cameraType, preset]) => [cameraType, [...preset.dualAllowed]]),
 );
 
-
-const getFpsOptions = (recorderModel) => {
+const getFpsOptions = recorderModel => {
   const pool = FPS_POOL;
   const maxFps = recorderModel?.maxFps ?? Math.max(...pool);
 
@@ -79,17 +73,17 @@ const getFpsOptions = (recorderModel) => {
 };
 
 const getGroupLabel = (group, index) => {
-  return group.title?.trim() || "";
+  return group.title?.trim() || '';
 };
 
-const SummaryRow = ({ label, icon, color, cfg, mbps}) => (
+const SummaryRow = ({ label, icon, color, cfg, mbps }) => (
   <div className="grid grid-cols-12 text-[9px] font-bold text-slate-500 py-0.5">
     <div className={`col-span-1 flex items-center gap-1 ${color}`}>
       {icon}
       <span>{label}</span>
     </div>
     <div className="col-span-2 text-center">{cfg.codec}</div>
-    <div className="col-span-3">{cfg.outResLabel ?? cfg.outRes ?? cfg.res?.label ?? cfg.res ?? "-"}</div>
+    <div className="col-span-3">{cfg.outResLabel ?? cfg.outRes ?? cfg.res?.label ?? cfg.res ?? '-'}</div>
     <div className="col-span-1 text-center">{cfg.fps}</div>
     <div className="col-span-2 text-center">{cfg.qual}</div>
     <div className="col-span-1 text-center">{cfg.hours}H</div>
@@ -97,14 +91,14 @@ const SummaryRow = ({ label, icon, color, cfg, mbps}) => (
   </div>
 );
 
-const calcGroupMbps = (cfg) => {
+const calcGroupMbps = cfg => {
   // 기존 NVR 계산
   return calcBandwidthMbps({
     res: cfg.res,
     fps: cfg.fps,
     qual: cfg.qual,
     codec: cfg.codec,
-    useIC: cfg.useIC
+    useIC: cfg.useIC,
   });
 };
 
@@ -119,860 +113,799 @@ const calcBandwidthMbps = ({ res, fps, qual, codec, useIC }) => {
   const scale = FPS_SCALE[fps] ?? FPS_SCALE[30];
   const bias = RES_BIAS[resKey] ?? 0;
 
-  let kbps = baseKbps * (scale + bias) / (FPS_SCALE[30] + bias);
+  let kbps = (baseKbps * (scale + bias)) / (FPS_SCALE[30] + bias);
 
-  if (codec === "H.265") kbps /= 2;
+  if (codec === 'H.265') kbps /= 2;
 
-  // ✅ Group별 Intelligent Codec
   if (useIC) {
-    if (codec === "H.265") kbps *= 0.687;
-    if (codec === "H.264") kbps *= 0.625;
+    if (codec === 'H.265') kbps *= 0.687;
+    if (codec === 'H.264') kbps *= 0.625;
   }
   return kbps / 1000; // Mbps
 };
-  
-const calcGroupPeakMbps = (group) => {
+
+const calcGroupPeakMbps = group => {
   const t = calcGroupMbps({
     ...group.time,
-    type : group.type,
-    useIC: group.useIC
+    type: group.type,
+    useIC: group.useIC,
   });
   const e = calcGroupMbps({
     ...group.event,
-    type : group.type,
-    useIC: group.useIC
+    type: group.type,
+    useIC: group.useIC,
   });
   const d = group.useDualTrackRecording
-  ? calcGroupMbps({
-      ...group.dual,
-      type: group.type,
-      useIC: group.useIC
-    })
-  : 0;
+    ? calcGroupMbps({
+        ...group.dual,
+        type: group.type,
+        useIC: group.useIC,
+      })
+    : 0;
 
   return Math.max(t, e, d) * group.qty;
 };
 
-
-
 const isDualResolutionAllowed = (camType, resValue) => {
-
   const allowed = dualAllowedResolutions[camType];
   if (!allowed) return true;
 
   return allowed.includes(resValue);
 };
 
-
-const getDefaultDualResolution = (camType) => {
+const getDefaultDualResolution = camType => {
   const resList = cameraTypes[camType] || [];
 
   const allowed = dualAllowedResolutions[camType] || [];
-    return resList.find(r => allowed.includes(r.value)) || resList[0] || null;
-
+  return resList.find(r => allowed.includes(r.value)) || resList[0] || null;
 };
 
-const getHddQtyOptions = (nvr) => {
+const getHddQtyOptions = nvr => {
   const max = nvr.hdd;
 
   if (nvr.evenHddOnly) {
-    return Array.from(
-      { length: Math.floor(max / 2) },
-      (_, i) => (i + 1) * 2
-    );
+    return Array.from({ length: Math.floor(max / 2) }, (_, i) => (i + 1) * 2);
   }
 
   return Array.from({ length: max }, (_, i) => i + 1);
 };
 
-const getResPixels = (resStr) => {
+const getResPixels = resStr => {
   const match = resStr.match(/(\d+)x(\d+)/);
   if (!match) return 2073600;
   return parseInt(match[1]) * parseInt(match[2]);
 };
 
 export default function App() {
+  const recorderModels = RECORDER_MODEL;
+  const [selectedRecorder, setSelectedRecorder] = useState(null);
+  const [camType, setCamType] = useState('');
+  const [camQty, setCamQty] = useState(1);
 
-const recorderModels = RECORDER_MODEL;
-const [selectedRecorder, setSelectedRecorder] = useState(null);
-const [camType, setCamType] = useState("");
-const [camQty, setCamQty] = useState(1);
+  const calcMbps = (cfg, ic) => {
+    return calcGroupMbps({
+      ...cfg,
+      type: camType,
+      useIC: ic,
+    });
+  };
 
-const calcMbps = (cfg, ic) => {
-  return calcGroupMbps({
-    ...cfg,
-    type: camType,
-    useIC: ic
-  });
-};
+  const getResolutionText = cfg => {
+    if (cfg.outResLabel) return cfg.outResLabel;
+    if (cfg.res?.label) return cfg.res.label;
+    if (cfg.outRes) return cfg.outRes;
+    return '-';
+  };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF('p', 'mm', 'a4');
 
-const getResolutionText = (cfg) => {
-  if (cfg.outResLabel) return cfg.outResLabel;
-  if (cfg.res?.label) return cfg.res.label;
-  if (cfg.outRes) return cfg.outRes;
-  return "-";
-};
+    let y = 15;
 
-
-const exportToPDF = () => {
-  const doc = new jsPDF("p", "mm", "a4");
-
-  let y = 15;
-
-  /* =====================
+    /* =====================
      TITLE
   ====================== */
-  doc.setFontSize(16);
-  doc.text("Storage Calculator Result", 105, y, { align: "center" });
-  y += 8;
+    doc.setFontSize(16);
+    doc.text('Storage Calculator Result', 105, y, { align: 'center' });
+    y += 8;
 
-  doc.setFontSize(10);
-  doc.text(`Recorder Model : ${selectedRecorder.name||"-"}`, 14, y);
-  doc.text(`Generated : ${new Date().toLocaleDateString()}`, 150, y);
-  y += 6;
+    doc.setFontSize(10);
+    doc.text(`Recorder Model : ${selectedRecorder.name || '-'}`, 14, y);
+    doc.text(`Generated : ${new Date().toLocaleDateString()}`, 150, y);
+    y += 6;
 
-  /* =====================
+    /* =====================
      NVR SUMMARY
   ====================== */
-  doc.setFontSize(12);
-  doc.text("Recorder Summary", 14, y);
-  y += 3;
+    doc.setFontSize(12);
+    doc.text('Recorder Summary', 14, y);
+    y += 3;
 
-  autoTable(doc,{
-    startY: y,
-    head: [["Item", "Value"]],
-    body: [
-      ["Recorder Model", selectedRecorder.name||"-"],
-      ["Channels Used", `${totals.totalCh} / ${selectedRecorder.ch}`],
-      [
-        "Total Throughput (Mbps)",
-        `${totals.maxThroughputMbps.toFixed(0)} / ${selectedRecorder.maxMbps}`,
+    autoTable(doc, {
+      startY: y,
+      head: [['Item', 'Value']],
+      body: [
+        ['Recorder Model', selectedRecorder.name || '-'],
+        ['Channels Used', `${totals.totalCh} / ${selectedRecorder.ch}`],
+        ['Total Throughput (Mbps)', `${totals.maxThroughputMbps.toFixed(0)} / ${selectedRecorder.maxMbps}`],
+        ['HDD', `${hddQty} EA × ${formatStorageSize(hddSize)}`],
+        ['RAID Mode', raidOption],
+        ['Usable Storage', formatStorageSize(totals.usableTB)],
+        ['Estimated Retention (Days)', totals.estimatedDays.toFixed(0)],
       ],
-      ["HDD", `${hddQty} EA × ${formatStorageSize(hddSize)}`],
-      ["RAID Mode", raidOption],
-      ["Usable Storage", formatStorageSize(totals.usableTB)],
-      ["Estimated Retention (Days)", totals.estimatedDays.toFixed(0)],
-    ],
-    theme: "grid",
-    styles: { fontSize: 9 },
-     columnStyles: {
-    0: { cellWidth: 60 },
-    1: { cellWidth: 40 },},
-    headStyles: {
-    fillColor: [225, 235, 255],
-    textColor: [30, 64, 175],
-    fontStyle: "bold"
-  },
-  });
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 40 },
+      },
+      headStyles: {
+        fillColor: [225, 235, 255],
+        textColor: [30, 64, 175],
+        fontStyle: 'bold',
+      },
+    });
 
-  y = doc.lastAutoTable.finalY + 8;
+    y = doc.lastAutoTable.finalY + 8;
 
-  /* =====================
+    /* =====================
      CAMERA GROUPS
   ====================== */
-  doc.setFontSize(12);
-  doc.text("Camera Groups", 14, y);
-  y += 3;
+    doc.setFontSize(12);
+    doc.text('Camera Groups', 14, y);
+    y += 3;
 
-  const tableBody = [];
+    const tableBody = [];
 
-  let grandQty = 0;
-  let grandHours = 0;
-  let grandMbps = 0;
-  let grandDaily = 0;
+    let grandQty = 0;
+    let grandHours = 0;
+    let grandMbps = 0;
+    let grandDaily = 0;
 
-  cameras.forEach((c, idx) => {
-    
-    const tMbps = calcGroupMbps({ ...c.time, type: c.type, useIC: c.useIC });
-    const eMbps = calcGroupMbps({ ...c.event, type: c.type, useIC: c.useIC });
-    const dMbps = c.useDualTrackRecording && c.dual? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }): 0;
-    const tDaily = (tMbps * 3600 * c.time.hours * c.qty) / 8 / 1024;
-    const eDaily = (eMbps * 3600 * c.event.hours * c.qty) / 8 / 1024;
-    const dDaily = (dMbps * 3600 * c.dual.hours * c.qty) / 8 / 1024;
+    cameras.forEach((c, idx) => {
+      const tMbps = calcGroupMbps({ ...c.time, type: c.type, useIC: c.useIC });
+      const eMbps = calcGroupMbps({ ...c.event, type: c.type, useIC: c.useIC });
+      const dMbps = c.useDualTrackRecording && c.dual ? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }) : 0;
+      const tDaily = (tMbps * 3600 * c.time.hours * c.qty) / 8 / 1024;
+      const eDaily = (eMbps * 3600 * c.event.hours * c.qty) / 8 / 1024;
+      const dDaily = (dMbps * 3600 * c.dual.hours * c.qty) / 8 / 1024;
 
-    tableBody.push([
-     getGroupLabel(c, idx),
-      c.type,
-      c.qty,
-      c.sceneLabel,
-      "Time",
-      c.time.codec,
-      getResolutionText(c.time),
-      c.time.fps,
-      c.time.qual,
-      c.time.hours,
-      tMbps.toFixed(1),
-      tDaily.toFixed(1),
-    ]);
+      tableBody.push([
+        getGroupLabel(c, idx),
+        c.type,
+        c.qty,
+        c.sceneLabel,
+        'Time',
+        c.time.codec,
+        getResolutionText(c.time),
+        c.time.fps,
+        c.time.qual,
+        c.time.hours,
+        tMbps.toFixed(1),
+        tDaily.toFixed(1),
+      ]);
 
-    tableBody.push([
-    getGroupLabel(c, idx),
-      c.type,
-      c.qty,
-      c.sceneLabel,
-      "Event",
-      c.event.codec,
-      getResolutionText(c.event),
-      c.event.fps,
-      c.event.qual,
-      c.event.hours,
-      eMbps.toFixed(1),
-      eDaily.toFixed(1),
-    ]);
+      tableBody.push([
+        getGroupLabel(c, idx),
+        c.type,
+        c.qty,
+        c.sceneLabel,
+        'Event',
+        c.event.codec,
+        getResolutionText(c.event),
+        c.event.fps,
+        c.event.qual,
+        c.event.hours,
+        eMbps.toFixed(1),
+        eDaily.toFixed(1),
+      ]);
 
-    if (c.useDualTrackRecording && c.dual) {
-  tableBody.push([
-    getGroupLabel(c, idx),
-    c.type,
-    c.qty,
-    c.sceneLabel,
-    "Dual",
-    c.dual.codec,
-    getResolutionText(c.dual),
-    c.dual.fps,
-    c.dual.qual,
-    c.dual.hours,
-    dMbps.toFixed(1),
-    dDaily.toFixed(1),
-  ]);
-}
-    const groupHours = c.time.hours + c.event.hours + (c.useDualTrackRecording && c.dual ? c.dual.hours : 0);
-    const groupMbps = tMbps + eMbps + dMbps;
-    const groupDaily = tDaily + eDaily + dDaily;
+      if (c.useDualTrackRecording && c.dual) {
+        tableBody.push([
+          getGroupLabel(c, idx),
+          c.type,
+          c.qty,
+          c.sceneLabel,
+          'Dual',
+          c.dual.codec,
+          getResolutionText(c.dual),
+          c.dual.fps,
+          c.dual.qual,
+          c.dual.hours,
+          dMbps.toFixed(1),
+          dDaily.toFixed(1),
+        ]);
+      }
+      const groupHours = c.time.hours + c.event.hours + (c.useDualTrackRecording && c.dual ? c.dual.hours : 0);
+      const groupMbps = tMbps + eMbps + dMbps;
+      const groupDaily = tDaily + eDaily + dDaily;
 
-    tableBody.push([
-    getGroupLabel(c, idx),
-      c.type,
-      c.qty,
-      c.sceneLabel,
-      "SUM",
-      "-",
-      "-",
-      "-",
-      "-",
-      groupHours,
-      "-",
-      groupDaily.toFixed(1),
-    ]);
+      tableBody.push([
+        getGroupLabel(c, idx),
+        c.type,
+        c.qty,
+        c.sceneLabel,
+        'SUM',
+        '-',
+        '-',
+        '-',
+        '-',
+        groupHours,
+        '-',
+        groupDaily.toFixed(1),
+      ]);
 
-    grandQty += c.qty;
-    grandHours += groupHours * c.qty;
-    grandMbps += groupMbps * c.qty;
-    grandDaily += groupDaily;
-  });
+      grandQty += c.qty;
+      grandHours += groupHours * c.qty;
+      grandMbps += groupMbps * c.qty;
+      grandDaily += groupDaily;
+    });
 
-  tableBody.push([
-    "TOTAL",
-    "-",
-    grandQty,
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    grandDaily.toFixed(1),
-  ]);
+    tableBody.push(['TOTAL', '-', grandQty, '-', '-', '-', '-', '-', '-', '-', '-', grandDaily.toFixed(1)]);
 
-  autoTable(doc,{
-    startY: y,
-    head: [[
-      "Group Title",
-      "Camera",
-      "Qty",
-      "Scene",
-      "Rec",
-      "Codec",
-      "Resolution",
-      "FPS",
-      "Qual",
-      "Hours",
-      "Mbps",
-      "Daily GB",
-    ]],
-    body: tableBody,
-    theme: "grid",
-    styles: { fontSize: 8 },
-    headStyles: {
-    fillColor: [225, 235, 255],
-    textColor: [30, 64, 175],  
-    fontStyle: "bold"
-  },
-  });
+    autoTable(doc, {
+      startY: y,
+      head: [
+        [
+          'Group Title',
+          'Camera',
+          'Qty',
+          'Scene',
+          'Rec',
+          'Codec',
+          'Resolution',
+          'FPS',
+          'Qual',
+          'Hours',
+          'Mbps',
+          'Daily GB',
+        ],
+      ],
+      body: tableBody,
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: {
+        fillColor: [225, 235, 255],
+        textColor: [30, 64, 175],
+        fontStyle: 'bold',
+      },
+    });
 
-  doc.save(`Storage Calculator_${selectedRecorder.name||"-"}_${new Date().toLocaleDateString()}.pdf`);
-};
-
-const exportToExcel = () => {
-  const rows = [];
-
-  /* =====================
-     NVR SUMMARY
-  ====================== */
-  rows.push(["RECORDER SUMMARY"]);
-  rows.push(["Item", "Value"]);
-  rows.push(["NVR Model", selectedRecorder.name||"-"]);
-  rows.push(["Channels Used", `${totals.totalCh} / ${selectedRecorder.ch}`]);
-  rows.push([
-    "Total Throughput (Mbps)",
-    `${totals.maxThroughputMbps.toFixed(0)} / ${selectedRecorder.maxMbps}`,
-  ]);
-  rows.push(["HDD", `${hddQty} EA × ${formatStorageSize(hddSize)}`]);
-  rows.push(["RAID Mode", raidOption]);
-  rows.push(["Usable Storage", formatStorageSize(totals.usableTB)]);
-  rows.push(["Estimated Retention (Days)", totals.estimatedDays.toFixed(0)]);
-  rows.push([]);
-
-  /* =====================
-     CAMERA GROUPS
-  ====================== */
-  rows.push(["CAMERA GROUPS"]);
-  rows.push([
-    "Group Title",
-    "Camera",
-    "Qty",
-    "Scene",
-    "Rec",
-    "Codec",
-    "Resolution",
-    "FPS",
-    "Qual",
-    "Hours",
-    "Mbps",
-    "Daily GB",
-  ]);
-
-  let grandQty = 0;
-  let grandHours = 0;
-  let grandMbps = 0;
-  let grandDaily = 0;
-
-
-  cameras.forEach((c, idx) => {
-
-const tMbps =  calcGroupMbps({
-      ...c.time,
-      type: c.type,
-      useIC: c.useIC
-    })
-
-const eMbps = calcGroupMbps({
-      ...c.event,
-      type: c.type,
-      useIC: c.useIC
-    })
-
-
-  const dMbps = c.useDualTrackRecording && c.dual? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }): 0;
-
-    const tDaily = (tMbps * 3600 * c.time.hours * c.qty) / 8 / 1024;
-    const eDaily = (eMbps * 3600 * c.event.hours * c.qty) / 8 / 1024;
-    const dDaily = (dMbps * 3600 * c.dual.hours * c.qty) / 8 / 1024;
-
-    rows.push([
-      getGroupLabel(c, idx),
-      c.type,
-      c.qty,
-      c.sceneLabel,
-      "Time",
-      c.time.codec,
-      getResolutionText(c.time),
-      c.time.fps,
-      c.time.qual,
-      c.time.hours,
-      tMbps.toFixed(1),
-      tDaily.toFixed(1),
-    ]);
-
-    rows.push([
-   getGroupLabel(c, idx),
-      c.type,
-      c.qty,
-      c.sceneLabel,
-      "Event",
-      c.event.codec,
-      getResolutionText(c.event),
-      c.event.fps,
-      c.event.qual,
-      c.event.hours,
-      eMbps.toFixed(1),
-      eDaily.toFixed(1),
-    ]);
-
-    if (c.useDualTrackRecording) {
-  rows.push([
-    getGroupLabel(c, idx),
-    c.type,
-    c.qty,
-    c.sceneLabel,
-    "Dual",
-    c.dual.codec,
-    getResolutionText(c.dual),
-    c.dual.fps,
-    c.dual.qual,
-    c.dual.hours,
-    dMbps.toFixed(1),
-    dDaily.toFixed(1),
-  ]);
-}
-
-    // Group TOTAL
-    const groupHours = c.time.hours + c.event.hours + (c.useDualTrackRecording && c.dual ? c.dual.hours : 0);
-    const groupMbps = tMbps + eMbps + dMbps;
-    const groupDaily = tDaily + eDaily + dDaily;
-
-    rows.push([
-   getGroupLabel(c, idx),
-      c.type,
-      c.qty,
-      c.sceneLabel,
-      "TOTAL",
-      "-",
-      "-",
-      "-",
-      "-",
-      groupHours,
-      "-",
-      groupDaily.toFixed(1),
-    ]);
-
-    grandQty += c.qty;
-    grandHours += groupHours * c.qty;
-    grandMbps += groupMbps * c.qty;
-    grandDaily += groupDaily;
-  });
-
-  // GRAND TOTAL
-  rows.push([]);
-  rows.push([
-    "TOTAL",
-    "-",
-    grandQty,
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    "-",
-    grandDaily.toFixed(1),
-  ]);
-
-  /* =====================
-     SHEET
-  ====================== */
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-
-  ws["!cols"] = [
-    { wch: 6 },
-    { wch: 10 },
-    { wch: 5 },
-    { wch: 10 },
-    { wch: 6 },
-    { wch: 7 },
-    { wch: 14 },
-    { wch: 5 },
-    { wch: 6 },
-    { wch: 6 },
-    { wch: 7 },
-    { wch: 9 },
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "VA Simulation");
-
-  const buffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  saveAs(
-    new Blob([buffer], { type: "application/octet-stream" }),
-    `Storage Calculator_${selectedRecorder.name||"-"}_${new Date().toLocaleDateString()}.xlsx`
-  );
-};
-useEffect(() => {
-  if (recorderModels.length > 0) {
-    setSelectedRecorder(recorderModels[0]);
-  } else {
-    setSelectedRecorder(null);
-  }
-}, [recorderModels]);
-
-useEffect(() => {
-  if (!camType) return;
-
-  const resList = cameraTypes[camType];
-  if (!resList || resList.length === 0) return;
-
-  
-setTimeConfig(prev => {
-  return { ...prev, res: resList.includes(prev.res) ? prev.res : resList[0] };
-});
-
-setEventConfig(prev => {
-  return { ...prev, res: resList.includes(prev.res) ? prev.res : resList[0] };
-});
-
-setDualConfig(prev => {
-  const found = resList.find(r => r.value === prev.res?.value);
-
-  if (
-    found &&
-    (isDualResolutionAllowed(camType, found.value))
-  ) {
-    return { ...prev, res: found };
-  }
-
-  return {
-    ...prev,
-    res: getDefaultDualResolution(camType),
-    qual: prev.qual
+    doc.save(`Storage Calculator_${selectedRecorder.name || '-'}_${new Date().toLocaleDateString()}.pdf`);
   };
-});
 
-}, [camType]);
+  const exportToExcel = () => {
+    const rows = [];
 
+    /* =====================
+     NVR SUMMARY
+    ====================== */
+    rows.push(['RECORDER SUMMARY']);
+    rows.push(['Item', 'Value']);
+    rows.push(['NVR Model', selectedRecorder.name || '-']);
+    rows.push(['Channels Used', `${totals.totalCh} / ${selectedRecorder.ch}`]);
+    rows.push(['Total Throughput (Mbps)', `${totals.maxThroughputMbps.toFixed(0)} / ${selectedRecorder.maxMbps}`]);
+    rows.push(['HDD', `${hddQty} EA × ${formatStorageSize(hddSize)}`]);
+    rows.push(['RAID Mode', raidOption]);
+    rows.push(['Usable Storage', formatStorageSize(totals.usableTB)]);
+    rows.push(['Estimated Retention (Days)', totals.estimatedDays.toFixed(0)]);
+    rows.push([]);
 
-  const [raidOption, setRaidOption] = useState("None");
+    /* =====================
+     CAMERA GROUPS
+    ====================== */
+    rows.push(['CAMERA GROUPS']);
+    rows.push([
+      'Group Title',
+      'Camera',
+      'Qty',
+      'Scene',
+      'Rec',
+      'Codec',
+      'Resolution',
+      'FPS',
+      'Qual',
+      'Hours',
+      'Mbps',
+      'Daily GB',
+    ]);
+
+    let grandQty = 0;
+    let grandHours = 0;
+    let grandMbps = 0;
+    let grandDaily = 0;
+
+    cameras.forEach((c, idx) => {
+      const tMbps = calcGroupMbps({
+        ...c.time,
+        type: c.type,
+        useIC: c.useIC,
+      });
+
+      const eMbps = calcGroupMbps({
+        ...c.event,
+        type: c.type,
+        useIC: c.useIC,
+      });
+
+      const dMbps = c.useDualTrackRecording && c.dual ? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }) : 0;
+
+      const tDaily = (tMbps * 3600 * c.time.hours * c.qty) / 8 / 1024;
+      const eDaily = (eMbps * 3600 * c.event.hours * c.qty) / 8 / 1024;
+      const dDaily = (dMbps * 3600 * c.dual.hours * c.qty) / 8 / 1024;
+
+      rows.push([
+        getGroupLabel(c, idx),
+        c.type,
+        c.qty,
+        c.sceneLabel,
+        'Time',
+        c.time.codec,
+        getResolutionText(c.time),
+        c.time.fps,
+        c.time.qual,
+        c.time.hours,
+        tMbps.toFixed(1),
+        tDaily.toFixed(1),
+      ]);
+
+      rows.push([
+        getGroupLabel(c, idx),
+        c.type,
+        c.qty,
+        c.sceneLabel,
+        'Event',
+        c.event.codec,
+        getResolutionText(c.event),
+        c.event.fps,
+        c.event.qual,
+        c.event.hours,
+        eMbps.toFixed(1),
+        eDaily.toFixed(1),
+      ]);
+
+      if (c.useDualTrackRecording) {
+        rows.push([
+          getGroupLabel(c, idx),
+          c.type,
+          c.qty,
+          c.sceneLabel,
+          'Dual',
+          c.dual.codec,
+          getResolutionText(c.dual),
+          c.dual.fps,
+          c.dual.qual,
+          c.dual.hours,
+          dMbps.toFixed(1),
+          dDaily.toFixed(1),
+        ]);
+      }
+
+      // Group TOTAL
+      const groupHours = c.time.hours + c.event.hours + (c.useDualTrackRecording && c.dual ? c.dual.hours : 0);
+      const groupMbps = tMbps + eMbps + dMbps;
+      const groupDaily = tDaily + eDaily + dDaily;
+
+      rows.push([
+        getGroupLabel(c, idx),
+        c.type,
+        c.qty,
+        c.sceneLabel,
+        'TOTAL',
+        '-',
+        '-',
+        '-',
+        '-',
+        groupHours,
+        '-',
+        groupDaily.toFixed(1),
+      ]);
+
+      grandQty += c.qty;
+      grandHours += groupHours * c.qty;
+      grandMbps += groupMbps * c.qty;
+      grandDaily += groupDaily;
+    });
+
+    // GRAND TOTAL
+    rows.push([]);
+    rows.push(['TOTAL', '-', grandQty, '-', '-', '-', '-', '-', '-', '-', '-', grandDaily.toFixed(1)]);
+
+    /*
+    =====================
+     SHEET
+     ======================
+    */
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 10 },
+      { wch: 5 },
+      { wch: 10 },
+      { wch: 6 },
+      { wch: 7 },
+      { wch: 14 },
+      { wch: 5 },
+      { wch: 6 },
+      { wch: 6 },
+      { wch: 7 },
+      { wch: 9 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'VA Simulation');
+
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(
+      new Blob([buffer], { type: 'application/octet-stream' }),
+      `Storage Calculator_${selectedRecorder.name || '-'}_${new Date().toLocaleDateString()}.xlsx`,
+    );
+  };
+
+  useEffect(() => {
+    if (recorderModels.length > 0) {
+      setSelectedRecorder(recorderModels[0]);
+    } else {
+      setSelectedRecorder(null);
+    }
+  }, [recorderModels]);
+
+  useEffect(() => {
+    if (!camType) return;
+
+    const resList = cameraTypes[camType];
+    if (!resList || resList.length === 0) return;
+
+    setTimeConfig(prev => {
+      return { ...prev, res: resList.includes(prev.res) ? prev.res : resList[0] };
+    });
+
+    setEventConfig(prev => {
+      return { ...prev, res: resList.includes(prev.res) ? prev.res : resList[0] };
+    });
+
+    setDualConfig(prev => {
+      const found = resList.find(r => r.value === prev.res?.value);
+
+      if (found && isDualResolutionAllowed(camType, found.value)) {
+        return { ...prev, res: found };
+      }
+
+      return {
+        ...prev,
+        res: getDefaultDualResolution(camType),
+        qual: prev.qual,
+      };
+    });
+  }, [camType]);
+
+  const [raidOption, setRaidOption] = useState('None');
   const [hddSize, setHddSize] = useState(2);
   const [hddQty, setHddQty] = useState(1);
   const [targetDays, setTargetDays] = useState(30);
   const [cameras, setCameras] = useState([]);
-  const [groupTitle, setGroupTitle] = useState("Group 1");
+  const [groupTitle, setGroupTitle] = useState('Group 1');
   const [nextGroupNumber, setNextGroupNumber] = useState(2);
   const deployedGroupsRef = useRef(null);
   const shouldScrollToBottomRef = useRef(false);
-  
+
   // Camera Group Settings (Add/Edit)
   const [editingId, setEditingId] = useState(null);
   const [formBackup, setFormBackup] = useState(null);
-  
-const normalizeRes = (r) =>
-  typeof r === "string" ? { label: r, value: r } : r;
 
-const getDefaultRes = () => {
-  const types = cameraTypes;
-  if (!types) return null;
-  const firstType = Object.keys(types)[0];
-  const r = types[firstType]?.[0];
-  return r;
-};
+  const normalizeRes = r => (typeof r === 'string' ? { label: r, value: r } : r);
 
-const [timeConfig, setTimeConfig] = useState({
-  res: getDefaultRes(),
-  fps: 15,
-  qual: "Standard",
-  codec: "H.265",
-  hours: 24
-});
+  const getDefaultRes = () => {
+    const types = cameraTypes;
+    if (!types) return null;
+    const firstType = Object.keys(types)[0];
+    const r = types[firstType]?.[0];
+    return r;
+  };
 
-const [eventConfig, setEventConfig] = useState({
-  res: getDefaultRes(),
-  fps: 30,
-  qual: "High",
-  codec: "H.265",
-  hours: 0
-});
+  const [timeConfig, setTimeConfig] = useState({
+    res: getDefaultRes(),
+    fps: 15,
+    qual: 'Standard',
+    codec: 'H.265',
+    hours: 24,
+  });
 
-const [dualConfig, setDualConfig] = useState({
-  res: getDefaultDualResolution(camType),
-  fps: 15,
-  qual: "Standard",
-  codec: "H.265",
-  hours: timeConfig.hours + eventConfig.hours
-});
-  const [activeSceneId, setActiveSceneId] = useState("");
+  const [eventConfig, setEventConfig] = useState({
+    res: getDefaultRes(),
+    fps: 30,
+    qual: 'High',
+    codec: 'H.265',
+    hours: 0,
+  });
+
+  const [dualConfig, setDualConfig] = useState({
+    res: getDefaultDualResolution(camType),
+    fps: 15,
+    qual: 'Standard',
+    codec: 'H.265',
+    hours: timeConfig.hours + eventConfig.hours,
+  });
+  const [activeSceneId, setActiveSceneId] = useState('');
   const [showRaidTooltip, setShowRaidTooltip] = useState(false);
   const [showStorageTooltip, setShowStorageTooltip] = useState(false);
   const [useIC, setUseIC] = useState(false); // ✅ Intelligent Codec (Group 단위)
   const [useDualTrackRecording, setUseDualTrackRecording] = useState(true);
-  
+
   useEffect(() => {
-  const options = getFpsOptions(selectedRecorder);
-  const maxAllowed = Math.max(...options);
+    const options = getFpsOptions(selectedRecorder);
+    const maxAllowed = Math.max(...options);
 
-  if (timeConfig.fps > maxAllowed) {
-    setTimeConfig(prev => ({ ...prev, fps: maxAllowed }));
-  }
-  if (eventConfig.fps > maxAllowed) {
-    setEventConfig(prev => ({ ...prev, fps: maxAllowed }));
-  }
-  if (dualConfig.fps > maxAllowed) {
-    setDualConfig(prev => ({ ...prev, fps: maxAllowed }));
-  }
-}, [selectedRecorder, timeConfig.fps, eventConfig.fps, dualConfig.fps]);
-  
+    if (timeConfig.fps > maxAllowed) {
+      setTimeConfig(prev => ({ ...prev, fps: maxAllowed }));
+    }
+    if (eventConfig.fps > maxAllowed) {
+      setEventConfig(prev => ({ ...prev, fps: maxAllowed }));
+    }
+    if (dualConfig.fps > maxAllowed) {
+      setDualConfig(prev => ({ ...prev, fps: maxAllowed }));
+    }
+  }, [selectedRecorder, timeConfig.fps, eventConfig.fps, dualConfig.fps]);
+
   useEffect(() => {
-  if(!selectedRecorder) return;
+    if (!selectedRecorder) return;
 
-  // ① NVR 기준 HDD Qty 옵션 계산
-  const options = getHddQtyOptions(selectedRecorder);
+    // ① NVR 기준 HDD Qty 옵션 계산
+    const options = getHddQtyOptions(selectedRecorder);
 
-  // DR-8xxx → 기본값 2
-  if (selectedRecorder.evenHddOnly) {
-    if (!options.includes(hddQty)) {
-      setHddQty(options.includes(2) ? 2 : options[0]);
-      return; // hddQty 바뀌면 effect 재실행
+    // DR-8xxx → 기본값 2
+    if (selectedRecorder.evenHddOnly) {
+      if (!options.includes(hddQty)) {
+        setHddQty(options.includes(2) ? 2 : options[0]);
+        return; // hddQty 바뀌면 effect 재실행
+      }
     }
-  } 
-  // 그 외 모델
-  else {
-    if (!options.includes(hddQty)) {
-      setHddQty(options[0]);
-      return;
+    // 그 외 모델
+    else {
+      if (!options.includes(hddQty)) {
+        setHddQty(options[0]);
+        return;
+      }
     }
-  }
 
-  // ② RAID 최소 디스크 수 검증
-  if (raidOption !== "None" && hddQty < RAID_MIN_DISKS[raidOption]) {
-    setRaidOption("None");
-  }
+    // ② RAID 최소 디스크 수 검증
+    if (raidOption !== 'None' && hddQty < RAID_MIN_DISKS[raidOption]) {
+      setRaidOption('None');
+    }
+  }, [selectedRecorder, hddQty, raidOption]);
 
-}, [selectedRecorder, hddQty, raidOption]);
+  useEffect(() => {
+    const types = Object.keys(cameraTypes || {}).filter(type => {
+      return true;
+    });
 
-useEffect(() => {
-  const types = Object.keys(cameraTypes || {}).filter(type => {
-    return true;
-  });
+    const defaultCamType = types[0] || '';
+    const defaultRes = cameraTypes[defaultCamType]?.[0] || null;
 
-  const defaultCamType = types[0] || "";
-  const defaultRes = cameraTypes[defaultCamType]?.[0] || null;
+    setGroupTitle('Group 1');
+    setNextGroupNumber(2);
 
-  setGroupTitle("Group 1");
-  setNextGroupNumber(2);
+    setActiveSceneId('');
+    setCamType(defaultCamType);
+    setCamQty(1);
 
-  setActiveSceneId("");
-  setCamType(defaultCamType);
-  setCamQty(1);
+    setUseDualTrackRecording(true);
+    setUseIC(false);
 
-  setUseDualTrackRecording(true);
-  setUseIC(false);
+    setTimeConfig({
+      res: defaultRes,
+      fps: 15,
+      qual: 'Standard',
+      codec: 'H.265',
+      hours: 24,
+    });
 
-  setTimeConfig({
-    res: defaultRes,
-    fps: 15,
-    qual: "Standard",
-    codec: "H.265",
-    hours: 24
-  });
+    setEventConfig({
+      res: defaultRes,
+      fps: 30,
+      qual: 'High',
+      codec: 'H.265',
+      hours: 0,
+    });
 
-  setEventConfig({
-    res: defaultRes,
-    fps: 30,
-    qual: "High",
-    codec: "H.265",
-    hours: 0
-  });
+    setDualConfig({
+      res: getDefaultDualResolution(defaultCamType),
+      fps: 15,
+      qual: 'Standard',
+      codec: 'H.265',
+      hours: 24,
+    });
 
-  setDualConfig({
-    res: getDefaultDualResolution(defaultCamType),
-    fps: 15,
-    qual: "Standard",
-    codec: "H.265",
-    hours: 24
-  });
+    setEditingId(null);
+    setFormBackup(null);
+  }, [selectedRecorder]);
 
-  setEditingId(null);
-  setFormBackup(null);
-}, [selectedRecorder]);
+  useEffect(() => {
+    setDualConfig(prev => ({
+      ...prev,
+      hours: timeConfig.hours + eventConfig.hours,
+    }));
+  }, [timeConfig.hours, eventConfig.hours]);
 
-useEffect(() => {
-  setDualConfig(prev => ({
-    ...prev,
-    hours: timeConfig.hours + eventConfig.hours
-  }));
-}, [timeConfig.hours, eventConfig.hours]);
+  const totals = useMemo(() => {
+    let totalDailyGB = 0;
+    let totalCh = 0;
+    let maxThroughputMbps = 0;
 
+    cameras.forEach(c => {
+      totalCh += c.qty;
+      const tMbps = calcGroupMbps({ ...c.time, type: c.type, useIC: c.useIC });
+      const eMbps = calcGroupMbps({ ...c.event, type: c.type, useIC: c.useIC });
 
-const totals = useMemo(() => {
-  let totalDailyGB = 0;
-  let totalCh = 0;
-  let maxThroughputMbps = 0;
+      const timeDaily = (tMbps * 3600 * c.time.hours * c.qty) / 8 / 1024;
+      const eventDaily = (eMbps * 3600 * c.event.hours * c.qty) / 8 / 1024;
 
-  cameras.forEach(c => {
-    totalCh += c.qty;
-    const tMbps = calcGroupMbps({ ...c.time, type: c.type, useIC: c.useIC});
-    const eMbps = calcGroupMbps({ ...c.event, type: c.type, useIC: c.useIC });
+      const dMbps = c.useDualTrackRecording ? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }) : 0;
 
-    const timeDaily =
-      (tMbps * 3600 * c.time.hours * c.qty) / 8 / 1024;
-    const eventDaily =
-      (eMbps * 3600 * c.event.hours * c.qty) / 8 / 1024;
-    
-    const dMbps = c.useDualTrackRecording
-      ? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }): 0;
+      const dualDaily = c.useDualTrackRecording ? (dMbps * 3600 * c.dual.hours * c.qty) / 8 / 1024 : 0;
 
-    const dualDaily = c.useDualTrackRecording
-      ? (dMbps * 3600 * c.dual.hours * c.qty) / 8 / 1024 : 0;
+      totalDailyGB += timeDaily + eventDaily + dualDaily;
+      maxThroughputMbps += Math.max(tMbps, eMbps, dMbps) * c.qty;
+    });
 
-    totalDailyGB += timeDaily + eventDaily + dualDaily;
-    maxThroughputMbps += Math.max(tMbps, eMbps, dMbps) * c.qty;
-  });
+    const rawTotalTB = hddSize * hddQty;
+    let effectiveTB = rawTotalTB;
 
-  const rawTotalTB = hddSize * hddQty;
-  let effectiveTB = rawTotalTB;
+    if (raidOption === 'RAID1' && hddQty >= 2) effectiveTB = rawTotalTB / 2;
+    if (raidOption === 'RAID5' && hddQty >= 3) effectiveTB = rawTotalTB - hddSize;
+    if (raidOption === 'RAID6' && hddQty >= 4) effectiveTB = rawTotalTB - hddSize * 2;
+    if (raidOption === 'RAID10' && hddQty >= 4) effectiveTB = rawTotalTB / 2;
 
-  if (raidOption === "RAID1" && hddQty >= 2) effectiveTB = rawTotalTB / 2;
-  if (raidOption === "RAID5" && hddQty >= 3) effectiveTB = rawTotalTB - hddSize;
-  if (raidOption === "RAID6" && hddQty >= 4) effectiveTB = rawTotalTB - hddSize * 2;
-  if (raidOption === "RAID10" && hddQty >= 4) effectiveTB = rawTotalTB / 2;
+    const usableTB = effectiveTB;
+    const estimatedDays = totalDailyGB > 0 ? (usableTB * 1024) / totalDailyGB : 0;
 
-  const usableTB = effectiveTB;
-  const estimatedDays =
-    totalDailyGB > 0 ? (usableTB * 1024) / totalDailyGB : 0;
+    return {
+      totalDailyGB,
+      totalCh,
+      maxThroughputMbps,
+      usableTB,
+      estimatedDays,
+    };
+  }, [cameras, hddSize, hddQty, raidOption, selectedRecorder]);
 
-  return {
-    totalDailyGB,
-    totalCh,
-    maxThroughputMbps,
-    usableTB,
-    estimatedDays
-  };
-}, [cameras, hddSize, hddQty, raidOption, selectedRecorder]);
-
-
-  const handleNvrChange = (e) => {
+  const handleNvrChange = e => {
     const model = recorderModels.find(m => m.name === e.target.value);
     if (model) {
       setSelectedRecorder(model);
-      setRaidOption("None");
+      setRaidOption('None');
       setHddQty(1);
       setCameras([]);
       setEditingId(null);
-      setActiveSceneId("");
+      setActiveSceneId('');
     }
   };
 
-  const handlePresetChange = (e) => {
-  const sceneId = e.target.value;
-  setActiveSceneId(sceneId);
-  if (!sceneId) return;
+  const handlePresetChange = e => {
+    const sceneId = e.target.value;
+    setActiveSceneId(sceneId);
+    if (!sceneId) return;
 
-  const scene = PRESET_SCENES.find(s => s.id === sceneId);
-  if (!scene) return;
-  const resList = cameraTypes[camType];
-  const pickRes = (idx) =>
-    resList[Math.min(idx, resList.length - 1)];
+    const scene = PRESET_SCENES.find(s => s.id === sceneId);
+    if (!scene) return;
+    const resList = cameraTypes[camType];
+    const pickRes = idx => resList[Math.min(idx, resList.length - 1)];
 
-  setTimeConfig(tc => ({
-    ...tc,
-    res: pickRes(scene.time.resIndex),
-    fps: scene.time.fps,
-    qual: scene.time.qual,
-    codec: scene.time.codec,
-    hours: scene.time.hours
-  }));
+    setTimeConfig(tc => ({
+      ...tc,
+      res: pickRes(scene.time.resIndex),
+      fps: scene.time.fps,
+      qual: scene.time.qual,
+      codec: scene.time.codec,
+      hours: scene.time.hours,
+    }));
 
-  setEventConfig(ec => ({
-    ...ec,
-    res: pickRes(scene.event.resIndex),
-    fps: scene.event.fps,
-    qual: scene.event.qual,
-    codec: scene.event.codec,
-    hours: scene.event.hours
-  }));
-};
-
-const handleAddOrUpdateCamera = () => {
-  // ① Channel limit 체크
-  const capacityLimit = editingId 
-    ? totals.totalCh - cameras.find(c => c.id === editingId).qty + camQty
-    : totals.totalCh + camQty;
-  
-  if (capacityLimit > selectedRecorder.ch) {
-    alert("Cannot add cameras because the NVR channel limit has been exceeded.");
-    return;
-  }
-  
-  const defaultGroupName = `Group ${cameras.length + 1}`;
-
-  if (!groupTitle.trim()) {
-    alert("Please enter a group title.");
-    return;
-  }
-
-  const normalizedGroupTitle = groupTitle.trim().toLowerCase();
-
-  const isDuplicateGroupTitle = cameras.some(c =>
-    c.id !== editingId &&
-    c.title?.trim().toLowerCase() === normalizedGroupTitle
-  );
-
-  if (isDuplicateGroupTitle) {
-    alert("Group title already exists. Please enter a different group title.");
-    return;
-  }
-  // ② 추가될 카메라 그룹 구성
-  const newGroup = {
-    id: editingId || Math.random().toString(36).substr(2, 9),
-    title: groupTitle.trim(),
-    type: camType,
-    qty: camQty,
-    sceneId : activeSceneId,
-    useIC,
-    useDualTrackRecording,
-    sceneLabel: PRESET_SCENES.find(s => s.id === activeSceneId)?.name || "User",
-    time: {
-      res: timeConfig.res,
-      fps: timeConfig.fps,
-      qual: timeConfig.qual,
-      codec: timeConfig.codec,
-      hours: timeConfig.hours
-    },
-
-    event: {
-      res: eventConfig.res,
-      fps: eventConfig.fps,
-      qual: eventConfig.qual,
-      codec: eventConfig.codec,
-      hours: eventConfig.hours
-    },
-    
-  dual: {
-      res: dualConfig.res,
-      fps: dualConfig.fps,
-      qual: dualConfig.qual,
-      codec: dualConfig.codec,
-      hours: dualConfig.hours
-    }
+    setEventConfig(ec => ({
+      ...ec,
+      res: pickRes(scene.event.resIndex),
+      fps: scene.event.fps,
+      qual: scene.event.qual,
+      codec: scene.event.codec,
+      hours: scene.event.hours,
+    }));
   };
 
-  // ③ Bandwidth 계산
-  const newGroupMbps = calcGroupPeakMbps(newGroup);
+  const handleAddOrUpdateCamera = () => {
+    // ① Channel limit 체크
+    const capacityLimit = editingId
+      ? totals.totalCh - cameras.find(c => c.id === editingId).qty + camQty
+      : totals.totalCh + camQty;
 
-  const currentMbps = editingId
-    ? totals.maxThroughputMbps - calcGroupPeakMbps(
-        cameras.find(c => c.id === editingId),
-      )
-    : totals.maxThroughputMbps;
+    if (capacityLimit > selectedRecorder.ch) {
+      alert('Cannot add cameras because the NVR channel limit has been exceeded.');
+      return;
+    }
 
-  const expectedTotalMbps = currentMbps + newGroupMbps;
+    const defaultGroupName = `Group ${cameras.length + 1}`;
 
-  // 🚫 Bandwidth HARD LIMIT
-  if (expectedTotalMbps > selectedRecorder.maxMbps) {
-    alert(
-  `Cannot add camera group due to NVR bandwidth limitation.\n\n` +
-  `Expected Throughput: ${expectedTotalMbps.toFixed(0)} Mbps\n` +
-  `NVR Limit: ${selectedRecorder.maxMbps} Mbps`
-);
+    if (!groupTitle.trim()) {
+      alert('Please enter a group title.');
+      return;
+    }
 
-    return;
-  }
+    const normalizedGroupTitle = groupTitle.trim().toLowerCase();
 
-  // ④ 실제 추가
-  if (editingId) {
-    setCameras(cameras.map(c => c.id === editingId ? newGroup : c));
-    setEditingId(null);
-  } else {
-    shouldScrollToBottomRef.current = true;
-    setCameras([...cameras, newGroup]);
-    setGroupTitle(`Group ${nextGroupNumber}`);
-    setNextGroupNumber(prev => prev + 1);
-  }
+    const isDuplicateGroupTitle = cameras.some(
+      c => c.id !== editingId && c.title?.trim().toLowerCase() === normalizedGroupTitle,
+    );
 
-  resetInputForm();
-};
+    if (isDuplicateGroupTitle) {
+      alert('Group title already exists. Please enter a different group title.');
+      return;
+    }
+    // ② 추가될 카메라 그룹 구성
+    const newGroup = {
+      id: editingId || Math.random().toString(36).substr(2, 9),
+      title: groupTitle.trim(),
+      type: camType,
+      qty: camQty,
+      sceneId: activeSceneId,
+      useIC,
+      useDualTrackRecording,
+      sceneLabel: PRESET_SCENES.find(s => s.id === activeSceneId)?.name || 'User',
+      time: {
+        res: timeConfig.res,
+        fps: timeConfig.fps,
+        qual: timeConfig.qual,
+        codec: timeConfig.codec,
+        hours: timeConfig.hours,
+      },
+
+      event: {
+        res: eventConfig.res,
+        fps: eventConfig.fps,
+        qual: eventConfig.qual,
+        codec: eventConfig.codec,
+        hours: eventConfig.hours,
+      },
+
+      dual: {
+        res: dualConfig.res,
+        fps: dualConfig.fps,
+        qual: dualConfig.qual,
+        codec: dualConfig.codec,
+        hours: dualConfig.hours,
+      },
+    };
+
+    // ③ Bandwidth 계산
+    const newGroupMbps = calcGroupPeakMbps(newGroup);
+
+    const currentMbps = editingId
+      ? totals.maxThroughputMbps - calcGroupPeakMbps(cameras.find(c => c.id === editingId))
+      : totals.maxThroughputMbps;
+
+    const expectedTotalMbps = currentMbps + newGroupMbps;
+
+    // 🚫 Bandwidth HARD LIMIT
+    if (expectedTotalMbps > selectedRecorder.maxMbps) {
+      alert(
+        `Cannot add camera group due to NVR bandwidth limitation.\n\n` +
+          `Expected Throughput: ${expectedTotalMbps.toFixed(0)} Mbps\n` +
+          `NVR Limit: ${selectedRecorder.maxMbps} Mbps`,
+      );
+
+      return;
+    }
+
+    // ④ 실제 추가
+    if (editingId) {
+      setCameras(cameras.map(c => (c.id === editingId ? newGroup : c)));
+      setEditingId(null);
+    } else {
+      shouldScrollToBottomRef.current = true;
+      setCameras([...cameras, newGroup]);
+      setGroupTitle(`Group ${nextGroupNumber}`);
+      setNextGroupNumber(prev => prev + 1);
+    }
+
+    resetInputForm();
+  };
 
   useEffect(() => {
     if (shouldScrollToBottomRef.current && deployedGroupsRef.current) {
@@ -981,7 +914,7 @@ const handleAddOrUpdateCamera = () => {
     }
   }, [cameras]);
 
-  const handleEdit = (camera) => {
+  const handleEdit = camera => {
     setFormBackup({
       groupTitle,
       camType,
@@ -994,23 +927,24 @@ const handleAddOrUpdateCamera = () => {
       activeSceneId,
     });
     setEditingId(camera.id);
-    setGroupTitle(camera.title || "");
+    setGroupTitle(camera.title || '');
     setCamType(camera.type);
     setCamQty(camera.qty);
     setUseIC(camera.useIC ?? false); // ✅ 추가
     setUseDualTrackRecording(camera.useDualTrackRecording ?? false);
-setDualConfig(camera.dual ?? {
-  res: getDefaultRes(),
-  fps: 15,
-  qual: "Standard",
-  codec: "H.265",
-  hours: 24
-});
+    setDualConfig(
+      camera.dual ?? {
+        res: getDefaultRes(),
+        fps: 15,
+        qual: 'Standard',
+        codec: 'H.265',
+        hours: 24,
+      },
+    );
     setTimeConfig({ ...camera.time });
     setEventConfig({ ...camera.event });
-    setActiveSceneId(camera.sceneId||"");
+    setActiveSceneId(camera.sceneId || '');
   };
-
 
   const resetInputForm = () => {
     if (formBackup) {
@@ -1023,21 +957,20 @@ setDualConfig(camera.dual ?? {
       setUseIC(formBackup.useIC);
       setUseDualTrackRecording(formBackup.useDualTrackRecording ?? false);
       setActiveSceneId(formBackup.activeSceneId);
-    } else{
+    } else {
       setGroupTitle(`Group ${nextGroupNumber}`);
     }
     setEditingId(null);
     setFormBackup(null);
-  
   };
 
   if (!selectedRecorder) {
-  return (
-    <div className="min-h-screen flex items-center justify-center text-slate-400">
-      Initializing recorder configuration...
-    </div>
-  );
-}
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400">
+        Initializing recorder configuration...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-20 font-sans text-slate-900">
@@ -1051,14 +984,16 @@ setDualConfig(camera.dual ?? {
             </div>
             <div>
               <p className="text-[9px] font-black text-slate-600 uppercase leading-none mb-1">Active Recorder</p>
-              <h1 className="text-sm font-black text-slate-800 leading-none">{selectedRecorder.name||"-"}</h1>
+              <h1 className="text-sm font-black text-slate-800 leading-none">{selectedRecorder.name || '-'}</h1>
             </div>
           </div>
 
           <div className="hidden md:flex flex-1 justify-center gap-12">
             <div className="text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase block">Channels</span>
-              <span className={`text-sm font-black ${totals.totalCh > selectedRecorder.ch ? 'text-rose-500' : 'text-slate-700'}`}>
+              <span
+                className={`text-sm font-black ${totals.totalCh > selectedRecorder.ch ? 'text-rose-500' : 'text-slate-700'}`}
+              >
                 {totals.totalCh} <span className="text-[10px] opacity-30">/ {selectedRecorder.ch}</span>
               </span>
             </div>
@@ -1068,38 +1003,45 @@ setDualConfig(camera.dual ?? {
             </div>
             <div className="text-center">
               <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Throughput</span>
-              <span className={`text-sm font-black ${totals.maxThroughputMbps > selectedRecorder.maxMbps ? 'text-rose-500' : 'text-black-600'}`}>
-                {totals.maxThroughputMbps.toFixed(0)} <span className="text-[10px] opacity-30">/ {selectedRecorder.maxMbps} Mbps</span>
+              <span
+                className={`text-sm font-black ${totals.maxThroughputMbps > selectedRecorder.maxMbps ? 'text-rose-500' : 'text-black-600'}`}
+              >
+                {totals.maxThroughputMbps.toFixed(0)}{' '}
+                <span className="text-[10px] opacity-30">/ {selectedRecorder.maxMbps} Mbps</span>
               </span>
             </div>
           </div>
-         <button
-  onClick={exportToExcel}
-  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg"
->
-  Export Excel
-</button>
-<button
-  onClick={exportToPDF}
-  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-lg"
->
-  Export PDF
-</button>
+          <button
+            onClick={exportToExcel}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg"
+          >
+            Export Excel
+          </button>
+          <button
+            onClick={exportToPDF}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-lg"
+          >
+            Export PDF
+          </button>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-4 bg-[#F58026] text-white px-4 py-1.5 rounded-lg shadow-md">
-                <div className="text-center">
-         
-                    <p className="text-[8px] font-bold text-white uppercase opacity-50">Est. Retention</p>
-                    <p className={`text-sm font-black ${totals.estimatedDays < targetDays ? 'text-rose-600' : 'text-white'}`}>
-                    {totals.estimatedDays.toFixed(0)} <span className="text-[9px] font-normal text-white opacity-50">Days</span>
-                    </p>
-                </div>
-                <div className="w-px h-6 bg-slate-700"></div>
-                <div className="text-center">
-                    <p className="text-[8px] font-bold text-white uppercase opacity-50">Target</p>
-                    <p className="text-sm font-black">{targetDays} <span className="text-[9px] font-normal opacity-50">Days</span></p>
-                </div>
+              <div className="text-center">
+                <p className="text-[8px] font-bold text-white uppercase opacity-50">Est. Retention</p>
+                <p
+                  className={`text-sm font-black ${totals.estimatedDays < targetDays ? 'text-rose-600' : 'text-white'}`}
+                >
+                  {totals.estimatedDays.toFixed(0)}{' '}
+                  <span className="text-[9px] font-normal text-white opacity-50">Days</span>
+                </p>
+              </div>
+              <div className="w-px h-6 bg-slate-700"></div>
+              <div className="text-center">
+                <p className="text-[8px] font-bold text-white uppercase opacity-50">Target</p>
+                <p className="text-sm font-black">
+                  {targetDays} <span className="text-[9px] font-normal opacity-50">Days</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1110,66 +1052,66 @@ setDualConfig(camera.dual ?? {
         <div className="lg:col-span-3 space-y-6">
           <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-5">
-                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Settings2 size={14} /> System Setup
-                </h2>
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <Settings2 size={14} /> System Setup
+              </h2>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Recorder Model</label>
-                <select 
-                    className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-black-700 outline-none" 
-                    value={selectedRecorder.name||"-"} 
-                    onChange={handleNvrChange}
+                <select
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-black-700 outline-none"
+                  value={selectedRecorder.name || '-'}
+                  onChange={handleNvrChange}
                 >
-                  {recorderModels.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                  {recorderModels.map(m => (
+                    <option key={m.name} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">HDD Qty (EA)</label>
-                  
-                    <select
-  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none" 
-  value={hddQty}
-  onChange={e => setHddQty(Number(e.target.value))}
->
-{selectedRecorder &&
-  getHddQtyOptions(selectedRecorder).map(qty => (
-    <option key={qty} value={qty}>{qty}</option>
-))}
 
-</select>
-                    
-                  
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
+                    value={hddQty}
+                    onChange={e => setHddQty(Number(e.target.value))}
+                  >
+                    {selectedRecorder &&
+                      getHddQtyOptions(selectedRecorder).map(qty => (
+                        <option key={qty} value={qty}>
+                          {qty}
+                        </option>
+                      ))}
+                  </select>
                 </div>
-<div className="relative">
-  <div className="flex items-center gap-1 mb-1">
-    <label className="text-[9px] font-black text-slate-400 uppercase">
-      Size (GB/TB)
-    </label>
-  </div>
-  <select
-    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
-    value={hddSize}
-    onChange={e => setHddSize(Number(e.target.value))}
-  >
-                  {HDD_SIZE_OPTIONS.map(size => (
-                    <option key={size} value={size}>
-                    {formatStorageSize(size)}
-                  </option>
+                <div className="relative">
+                  <div className="flex items-center gap-1 mb-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase">Size (GB/TB)</label>
+                  </div>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
+                    value={hddSize}
+                    onChange={e => setHddSize(Number(e.target.value))}
+                  >
+                    {HDD_SIZE_OPTIONS.map(size => (
+                      <option key={size} value={size}>
+                        {formatStorageSize(size)}
+                      </option>
                     ))}
                   </select>
-
                 </div>
               </div>
 
               <div className="relative">
                 <div className="flex items-center gap-1 mb-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase">RAID Mode</label>
-                  <button 
-                    onMouseEnter={() => setShowRaidTooltip(true)} 
+                  <button
+                    onMouseEnter={() => setShowRaidTooltip(true)}
                     onMouseLeave={() => setShowRaidTooltip(false)}
                     className="text-red-600"
                   >
@@ -1182,21 +1124,17 @@ setDualConfig(camera.dual ?? {
                     {RAID_INFO[raidOption]}
                   </div>
                 )}
-    <select
-  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
-  value={raidOption}
-  onChange={e => setRaidOption(e.target.value)}
->
-  {selectedRecorder.raids.map(r => (
-    <option
-      key={r}
-      value={r}
-      disabled={hddQty < RAID_MIN_DISKS[r]}
-    >
-      {r}
-    </option>
-  ))}
-</select>
+                <select
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none"
+                  value={raidOption}
+                  onChange={e => setRaidOption(e.target.value)}
+                >
+                  {selectedRecorder.raids.map(r => (
+                    <option key={r} value={r} disabled={hddQty < RAID_MIN_DISKS[r]}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="pt-2">
@@ -1204,96 +1142,104 @@ setDualConfig(camera.dual ?? {
                   <label className="text-[9px] font-black text-slate-400 uppercase">Target Retention</label>
                   <span className="text-[10px] font-black text-orange-600">{targetDays} Days</span>
                 </div>
-                <input type="range" min="1" max="120" value={targetDays} onChange={e => setTargetDays(Number(e.target.value))} className="w-full h-1 bg-slate-100 rounded-lg appearance-none accent-orange-600 cursor-pointer" />
+                <input
+                  type="range"
+                  min="1"
+                  max="120"
+                  value={targetDays}
+                  onChange={e => setTargetDays(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-100 rounded-lg appearance-none accent-orange-600 cursor-pointer"
+                />
               </div>
             </div>
           </section>
 
           {/* Metrics Visualized */}
           <div className="bg-[#F58026] rounded-2xl p-5 text-white shadow-lg space-y-6">
-             <div>
-               <div className="flex items-center justify-between mb-2">
-                 <span className="text-[9px] font-black uppercase text-white opacity-70">Storage Usage (Est.)</span>
-                 <Database size={14} className="text-white-500 opacity-70" />
-               </div>
-               <div className="flex justify-between items-center mb-2">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] font-black uppercase text-white opacity-70">Storage Usage (Est.)</span>
+                <Database size={14} className="text-white-500 opacity-70" />
+              </div>
+              <div className="flex justify-between items-center mb-2">
                 <div>
                   <p className="text-xl font-bold text-white">
-                    {(totals.totalDailyGB * targetDays / 1024).toFixed(1)}
-                    <span className="ml-1 text-xs font-normal opacity-70">
-                      TB Required
-                    </span>
+                    {((totals.totalDailyGB * targetDays) / 1024).toFixed(1)}
+                    <span className="ml-1 text-xs font-normal opacity-70">TB Required</span>
                   </p>
-                  <p className="mt-0.5 text-[10px] font-medium text-white/60"> ≈{" "}
-                    <span className="font-black text-white/90">
+                  <p className="mt-0.5 text-[10px] font-medium text-white/60">
+                    {' '}
+                    ≈ <span className="font-black text-white/90">
                       {(totals.totalDailyGB * targetDays).toFixed(0)}
-                    </span>{" "}GB
+                    </span>{' '}
+                    GB
                   </p>
                 </div>
-                <p className="text-[10px] font-bold text-white opacity-70">
-                  Target {targetDays}D
-                  </p>
-                </div>
-               <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ring-1 ring-inset ${ totals.estimatedDays < targetDays ? 'bg-rose-300 ring-rose-600': 'bg-emerald-300 ring-emerald-600'}`}
-                    style={{width: `${Math.min(100, (totals.totalDailyGB * targetDays / 1024) / totals.usableTB * 100)}%`}}
-                  ></div>
-               </div>
-             </div>
+                <p className="text-[10px] font-bold text-white opacity-70">Target {targetDays}D</p>
+              </div>
+              <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ring-1 ring-inset ${totals.estimatedDays < targetDays ? 'bg-rose-300 ring-rose-600' : 'bg-emerald-300 ring-emerald-600'}`}
+                  style={{
+                    width: `${Math.min(100, ((totals.totalDailyGB * targetDays) / 1024 / totals.usableTB) * 100)}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
 
-             <div>
-               <div className="flex items-center justify-between mb-2">
-                 <span className="text-[9px] font-black uppercase text-white opacity-70">Bandwidth Load</span>
-                 <TrendingUp size={14} className="text-amber-500" />
-               </div>
-               <div className="flex justify-between items-end mb-2">
-                  <p className="text-xl font-bold font-white">{totals.maxThroughputMbps.toFixed(0)} <span className="text-xs font-normal opacity-70">Mbps</span></p>
-                  <p className="text-[10px] font-bold text-white opacity-70">{(totals.maxThroughputMbps / selectedRecorder.maxMbps * 100).toFixed(0)}%</p>
-               </div>
-               <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ring-1 ring-inset ${totals.maxThroughputMbps > selectedRecorder.maxMbps? 'bg-rose-300 ring-rose-600': 'bg-blue-300 ring-blue-600'}`}
-                    style={{width: `${Math.min(100, totals.maxThroughputMbps / selectedRecorder.maxMbps * 100)}%`}}
-                  ></div>
-               </div>
-             </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] font-black uppercase text-white opacity-70">Bandwidth Load</span>
+                <TrendingUp size={14} className="text-amber-500" />
+              </div>
+              <div className="flex justify-between items-end mb-2">
+                <p className="text-xl font-bold font-white">
+                  {totals.maxThroughputMbps.toFixed(0)} <span className="text-xs font-normal opacity-70">Mbps</span>
+                </p>
+                <p className="text-[10px] font-bold text-white opacity-70">
+                  {((totals.maxThroughputMbps / selectedRecorder.maxMbps) * 100).toFixed(0)}%
+                </p>
+              </div>
+              <div className="w-full bg-white/[0.35] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ring-1 ring-inset ${totals.maxThroughputMbps > selectedRecorder.maxMbps ? 'bg-rose-300 ring-rose-600' : 'bg-blue-300 ring-blue-600'}`}
+                  style={{
+                    width: `${Math.min(100, (totals.maxThroughputMbps / selectedRecorder.maxMbps) * 100)}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Right: Camera Management */}
         <div className="lg:col-span-9 space-y-6">
-        {/*
           <section
-            className={`bg-white rounded-2xl p-6 shadow-sm border transition-all duration-300 relative ${
-              editingId? 'z-[60] border-blue-400 ring-2 ring-blue-500/10': 'border-slate-200'
-              }`}
+            className={`bg-white rounded-2xl p-6 shadow-sm border transition-all duration-300 ${editingId ? 'border-blue-400 ring-2 ring-blue-500/10' : 'border-slate-200'}`}
           >
-          */}
-        <section className={`bg-white rounded-2xl p-6 shadow-sm border transition-all duration-300 ${editingId ? 'border-blue-400 ring-2 ring-blue-500/10' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between mb-2">
-<div className="flex items-center gap-3">
-  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-    editingId ? 'bg-blue-600 text-white' : 'bg-orange-50 text-orange-600'
-  }`}>
-    {editingId ? <Edit2 size={16} /> : <Camera size={18} />}
-  </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    editingId ? 'bg-blue-600 text-white' : 'bg-orange-50 text-orange-600'
+                  }`}
+                >
+                  {editingId ? <Edit2 size={16} /> : <Camera size={18} />}
+                </div>
 
-  <h2 className="gap-1 text-sm font-black text-slate-800">
-    {editingId ? 'Edit Camera Group' : 'Add Camera Group'}
-  </h2>
+                <h2 className="gap-1 text-sm font-black text-slate-800">
+                  {editingId ? 'Edit Camera Group' : 'Add Camera Group'}
+                </h2>
 
-  {/* Group Title Input */}
-  <div className="ml-3 flex items-center gap-1 border-l border-slate-100 pl-3">
-    <span className="text-[9px] font-black text-slate-400 uppercase whitespace-nowrap">
-      Group Title
-    </span>
-    <input
-      type="text"
-      placeholder="Enter group title"
-      value={groupTitle}
-      onChange={e => setGroupTitle(e.target.value)}
-      className="
+                {/* Group Title Input */}
+                <div className="ml-3 flex items-center gap-1 border-l border-slate-100 pl-3">
+                  <span className="text-[9px] font-black text-slate-400 uppercase whitespace-nowrap">Group Title</span>
+                  <input
+                    type="text"
+                    placeholder="Enter group title"
+                    value={groupTitle}
+                    onChange={e => setGroupTitle(e.target.value)}
+                    className="
         w-36
         bg-slate-50
         border border-slate-200
@@ -1305,82 +1251,87 @@ setDualConfig(camera.dual ?? {
         outline-none
         focus:ring-1 focus:ring-orange-500
       "
-    />
-  </div>
-</div>
+                  />
+                </div>
+              </div>
 
-              
               <div className="ml-4 flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
                 <div className="flex items-center gap-2 px-3 py-1.5">
                   <span className="text-[9px] font-black text-slate-400 uppercase">Camera</span>
-                  <select className="bg-transparent text-xs font-bold outline-none w-[150px] truncate" value={camType} 
-                  onChange={e => {
-  const nextCamType = e.target.value;
+                  <select
+                    className="bg-transparent text-xs font-bold outline-none w-[150px] truncate"
+                    value={camType}
+                    onChange={e => {
+                      const nextCamType = e.target.value;
 
-  setCamType(nextCamType);
-  setActiveSceneId("");
+                      setCamType(nextCamType);
+                      setActiveSceneId('');
 
-  setDualConfig(prev => ({
-    ...prev,
-    res: getDefaultDualResolution(nextCamType),
-    qual: prev.qual
-  }));
-}}
+                      setDualConfig(prev => ({
+                        ...prev,
+                        res: getDefaultDualResolution(nextCamType),
+                        qual: prev.qual,
+                      }));
+                    }}
                   >
-                    {Object.keys(cameraTypes || {}).filter(type => {
-                      return true;
-                    }).map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                    ))}
+                    {Object.keys(cameraTypes || {})
+                      .filter(type => {
+                        return true;
+                      })
+                      .map(type => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div className="w-px h-4 bg-slate-200"></div>
                 <div className="flex items-center gap-2 px-3 py-1.5">
                   <span className="text-[9px] font-black text-slate-400 uppercase">Qty</span>
-                  <input type="number" min="1" className="w-10 bg-transparent text-xs font-bold text-center outline-none" value={camQty} onChange={e => setCamQty(Number(e.target.value))} />
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-10 bg-transparent text-xs font-bold text-center outline-none"
+                    value={camQty}
+                    onChange={e => setCamQty(Number(e.target.value))}
+                  />
                 </div>
               </div>
             </div>
-{/* Intelligent Codec Option */}
-<div className="flex justify-end gap-6 px-4 py-1 mb-1">
-  <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
-    <input
-      type="checkbox"
-      checked={useDualTrackRecording}
-      onChange={e => {
-  const checked = e.target.checked;
-  setUseDualTrackRecording(checked);
+            {/* Intelligent Codec Option */}
+            <div className="flex justify-end gap-6 px-4 py-1 mb-1">
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={useDualTrackRecording}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setUseDualTrackRecording(checked);
 
-  if (checked) {
-    setDualConfig(prev => ({
-      ...prev,
-      res: getDefaultDualResolution(camType),
-      qual: prev.qual
-    }));
-  }
-}}
-      className="accent-purple-600"
-    />
-    <span className="text-[10px] font-black text-slate-600 uppercase">
-      Use Dual Track Recording
-    </span>
-  </label>
-  <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
-    <input
-      type="checkbox"
-      checked={useIC}
-      onChange={e => setUseIC(e.target.checked)}
-      className="accent-orange-600"
-    />
-    <span className="text-[10px] font-black text-slate-600 uppercase">
-      Use Intelligent Codec
-    </span>
-  </label>
-</div>
+                    if (checked) {
+                      setDualConfig(prev => ({
+                        ...prev,
+                        res: getDefaultDualResolution(camType),
+                        qual: prev.qual,
+                      }));
+                    }
+                  }}
+                  className="accent-purple-600"
+                />
+                <span className="text-[10px] font-black text-slate-600 uppercase">Use Dual Track Recording</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={useIC}
+                  onChange={e => setUseIC(e.target.checked)}
+                  className="accent-orange-600"
+                />
+                <span className="text-[10px] font-black text-slate-600 uppercase">Use Intelligent Codec</span>
+              </label>
+            </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-4">
               <div className="grid grid-cols-12 bg-white border-b border-slate-200 py-2 px-4">
                 <div className="col-span-2 text-[9px] font-black text-slate-400 ">Recording</div>
                 <div className="col-span-2 text-[9px] font-black text-slate-400 text-center">Codec</div>
@@ -1390,59 +1341,78 @@ setDualConfig(camera.dual ?? {
                 <div className="col-span-1 text-[9px] font-black text-slate-400 text-center">Hours</div>
                 <div className="col-span-1 text-[9px] font-black text-slate-400 text-right">Mbps</div>
               </div>
-              
+
               <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
                 <div className="col-span-2 flex items-center gap-2">
                   <Clock size={14} className="text-blue-500" />
                   <span className="text-xs font-black text-blue-600 uppercase">HQ</span>
                 </div>
                 <div className="col-span-2 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={timeConfig.codec} onChange={e => setTimeConfig({...timeConfig, codec: e.target.value})}>
-                    <option>H.265</option><option>H.264</option>
+                  <select
+                    className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                    value={timeConfig.codec}
+                    onChange={e => setTimeConfig({ ...timeConfig, codec: e.target.value })}
+                  >
+                    <option>H.265</option>
+                    <option>H.264</option>
                   </select>
                 </div>
                 <div className="col-span-3 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={timeConfig.res?.value} onChange={e => { const selected = cameraTypes[camType].find(r => r.value === e.target.value);
-                   setTimeConfig({ ...timeConfig, res: selected });
-  }}
->
-  {cameraTypes[camType]
-    ?.map(r => (
-      <option key={r.value} value={r.value}>
-        {r.label}
-      </option>
-    ))}
-</select>
-                </div>
-                <div className="col-span-1 px-2">
                   <select
-  className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
-  value={timeConfig.fps}
-  onChange={e => setTimeConfig({ ...timeConfig, fps: Number(e.target.value) })}
->
-  {getFpsOptions(selectedRecorder).map(fps => (
-    <option key={fps} value={fps}>{fps}</option>
-  ))}
-</select>
-                </div>
-                <div className="col-span-2 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={timeConfig.qual} onChange={e => setTimeConfig({...timeConfig, qual: e.target.value})}>
-                    {Object.keys(QUALITY_MULTIPLIER).map(q => <option key={q} value={q}>{q}</option>)}
+                    className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                    value={timeConfig.res?.value}
+                    onChange={e => {
+                      const selected = cameraTypes[camType].find(r => r.value === e.target.value);
+                      setTimeConfig({ ...timeConfig, res: selected });
+                    }}
+                  >
+                    {cameraTypes[camType]?.map(r => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="col-span-1 px-2">
-                  <input type="number"
-  min={0}
-  max={24 - eventConfig.hours}
-  value={timeConfig.hours}
-  onChange={e => {
-    const v = Number(e.target.value);
-    setTimeConfig({
-      ...timeConfig,
-      hours: Math.min(v, 24 - eventConfig.hours)
-    });
-  }}
-    className="
+                  <select
+                    className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                    value={timeConfig.fps}
+                    onChange={e => setTimeConfig({ ...timeConfig, fps: Number(e.target.value) })}
+                  >
+                    {getFpsOptions(selectedRecorder).map(fps => (
+                      <option key={fps} value={fps}>
+                        {fps}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2 px-2">
+                  <select
+                    className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                    value={timeConfig.qual}
+                    onChange={e => setTimeConfig({ ...timeConfig, qual: e.target.value })}
+                  >
+                    {Object.keys(QUALITY_MULTIPLIER).map(q => (
+                      <option key={q} value={q}>
+                        {q}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-1 px-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={24 - eventConfig.hours}
+                    value={timeConfig.hours}
+                    onChange={e => {
+                      const v = Number(e.target.value);
+                      setTimeConfig({
+                        ...timeConfig,
+                        hours: Math.min(v, 24 - eventConfig.hours),
+                      });
+                    }}
+                    className="
     w-full
     bg-white
     border border-slate-200
@@ -1456,195 +1426,219 @@ setDualConfig(camera.dual ?? {
     focus:outline-none
     focus:ring-1 focus:ring-blue-500
   "
-
-/>
-
+                  />
                 </div>
                 <div className="col-span-1 text-right">
-                  <span className="text-[10px] font-black text-slate-600 text-center">{calcMbps(timeConfig, useIC).toFixed(1)}</span>
+                  <span className="text-[10px] font-black text-slate-600 text-center">
+                    {calcMbps(timeConfig, useIC).toFixed(1)}
+                  </span>
                 </div>
               </div>
 
               <div className="h-px bg-slate-200 mx-4"></div>
 
-{SHOW_EVENT_CONFIG && (
-              <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
-                <div className="col-span-2 flex items-center gap-2">
-                  <Zap size={14} className="text-amber-500" />
-                  <span className="text-xs font-black text-amber-600 uppercase">Event</span>
+              {SHOW_EVENT_CONFIG && (
+                <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
+                  <div className="col-span-2 flex items-center gap-2">
+                    <Zap size={14} className="text-amber-500" />
+                    <span className="text-xs font-black text-amber-600 uppercase">Event</span>
+                  </div>
+                  <div className="col-span-2 px-2">
+                    <select
+                      className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                      value={eventConfig.codec}
+                      onChange={e => setEventConfig({ ...eventConfig, codec: e.target.value })}
+                    >
+                      <option>H.265</option>
+                      <option>H.264</option>
+                    </select>
+                  </div>
+                  <div className="col-span-3 px-2">
+                    <select
+                      className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                      value={eventConfig.res?.value}
+                      onChange={e => {
+                        const selected = cameraTypes[camType].find(r => r.value === e.target.value);
+                        setEventConfig({ ...eventConfig, res: selected });
+                      }}
+                    >
+                      {cameraTypes[camType]?.map(r => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-1 px-2">
+                    <select
+                      className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center text-center"
+                      value={eventConfig.fps}
+                      onChange={e => setEventConfig({ ...eventConfig, fps: Number(e.target.value) })}
+                    >
+                      {getFpsOptions(selectedRecorder).map(fps => (
+                        <option key={fps} value={fps}>
+                          {fps}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2 px-2">
+                    <select
+                      className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                      value={eventConfig.qual}
+                      onChange={e => setEventConfig({ ...eventConfig, qual: e.target.value })}
+                    >
+                      {Object.keys(QUALITY_MULTIPLIER).map(q => (
+                        <option key={q} value={q}>
+                          {q}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-1 px-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={24 - timeConfig.hours}
+                      value={eventConfig.hours}
+                      onChange={e => {
+                        const v = Number(e.target.value);
+                        setEventConfig({
+                          ...eventConfig,
+                          hours: Math.min(v, 24 - timeConfig.hours),
+                        });
+                      }}
+                      className="
+                        w-full
+                        bg-white
+                        border border-slate-200
+                        rounded-md
+                        h-[28px]
+                        px-1.5
+                        text-[11px]
+                        font-bold
+                        text-center
+                        leading-none
+                        focus:outline-none
+                        focus:ring-1 focus:ring-blue-500
+                      "
+                    />
+                  </div>
+                  <div className="col-span-1 text-right">
+                    <span className="text-[10px] font-black text-slate-600">
+                      {calcMbps(eventConfig, useIC).toFixed(1)}
+                    </span>
+                  </div>
                 </div>
-                <div className="col-span-2 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={eventConfig.codec} onChange={e => setEventConfig({...eventConfig, codec: e.target.value})}>
-                    <option>H.265</option><option>H.264</option>
-                  </select>
-                </div>
-                <div className="col-span-3 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={eventConfig.res?.value} onChange={e => { const selected = cameraTypes[camType].find(r => r.value === e.target.value);
-    setEventConfig({ ...eventConfig, res: selected });
-  }}
->
-  {cameraTypes[camType]
-    ?.map(r => (
-      <option key={r.value} value={r.value}>
-        {r.label}
-      </option>
-    ))}
-</select>
-                </div>
-                <div className="col-span-1 px-2">
-                  <select
-  className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center text-center"
-  value={eventConfig.fps}
-  onChange={e => setEventConfig({ ...eventConfig, fps: Number(e.target.value) })}
->
-  {getFpsOptions(selectedRecorder).map(fps => (
-    <option key={fps} value={fps}>{fps}</option>
-  ))}
-</select>
-                </div>
-                <div className="col-span-2 px-2">
-                  <select className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center" value={eventConfig.qual} onChange={e => setEventConfig({...eventConfig, qual: e.target.value})}>
-                    {Object.keys(QUALITY_MULTIPLIER).map(q => <option key={q} value={q}>{q}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-1 px-2">
-                  <input
-  type="number"
-  min={0}
-  max={24 - timeConfig.hours}
-  value={eventConfig.hours}
-  onChange={e => {
-    const v = Number(e.target.value);
-    setEventConfig({
-      ...eventConfig,
-      hours: Math.min(v, 24 - timeConfig.hours)
-    });
-  }}
-      className="
-    w-full
-    bg-white
-    border border-slate-200
-    rounded-md
-    h-[28px]
-    px-1.5
-    text-[11px]
-    font-bold
-    text-center
-    leading-none
-    focus:outline-none
-    focus:ring-1 focus:ring-blue-500
-  "
-/>
-
-                </div>
-                <div className="col-span-1 text-right">
-                  <span className="text-[10px] font-black text-slate-600">{calcMbps(eventConfig, useIC).toFixed(1)}</span>
-                </div>
-              </div>)}
+              )}
               {useDualTrackRecording && (
-  <>
-    {/* <div className="h-px bg-slate-200 mx-4"></div> */}
+                <>
+                  {/* <div className="h-px bg-slate-200 mx-4"></div> */}
 
-    <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
-      <div className="col-span-2 flex items-center gap-2">
-        <Layers size={14} className="text-purple-500" />
-        <span className="text-xs font-black text-purple-600 uppercase">
-          LT
-        </span>
-      </div>
+                  <div className="grid grid-cols-12 items-center py-3 px-4 bg-white/50">
+                    <div className="col-span-2 flex items-center gap-2">
+                      <Layers size={14} className="text-purple-500" />
+                      <span className="text-xs font-black text-purple-600 uppercase">LT</span>
+                    </div>
 
-      <div className="col-span-2 px-2">
-        <select
-          className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
-          value={dualConfig.codec}
-          onChange={e => setDualConfig({ ...dualConfig, codec: e.target.value })}
-        >
-          <option>H.265</option>
-          <option>H.264</option>
-        </select>
-      </div>
+                    <div className="col-span-2 px-2">
+                      <select
+                        className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                        value={dualConfig.codec}
+                        onChange={e => setDualConfig({ ...dualConfig, codec: e.target.value })}
+                      >
+                        <option>H.265</option>
+                        <option>H.264</option>
+                      </select>
+                    </div>
 
-      <div className="col-span-3 px-2">
-        <select
-          className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
-          value={dualConfig.res?.value}
-          onChange={e => {
-            const selected = cameraTypes[camType].find(r => r.value === e.target.value);
-            setDualConfig({ ...dualConfig, res: selected });
-          }}
-        >
-          {cameraTypes[camType]?.map(r => {
-            const disabled = !isDualResolutionAllowed(camType, r.value);
+                    <div className="col-span-3 px-2">
+                      <select
+                        className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                        value={dualConfig.res?.value}
+                        onChange={e => {
+                          const selected = cameraTypes[camType].find(r => r.value === e.target.value);
+                          setDualConfig({ ...dualConfig, res: selected });
+                        }}
+                      >
+                        {cameraTypes[camType]?.map(r => {
+                          const disabled = !isDualResolutionAllowed(camType, r.value);
 
-  return (
-    <option
-      key={r.value}
-      value={r.value}
-      disabled={disabled}
-    >
-      {disabled ? `(Not Supported) ${r.label}` : r.label}
-    </option>
-  );
-})}
-        </select>
-      </div>
+                          return (
+                            <option key={r.value} value={r.value} disabled={disabled}>
+                              {disabled ? `(Not Supported) ${r.label}` : r.label}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
 
-      <div className="col-span-1 px-2">
-        <select
-          className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
-          value={dualConfig.fps}
-          onChange={e => setDualConfig({ ...dualConfig, fps: Number(e.target.value) })}
-        >
-          {getFpsOptions(selectedRecorder).map(fps => (
-            <option key={fps} value={fps}>{fps}</option>
-          ))}
-        </select>
-      </div>
+                    <div className="col-span-1 px-2">
+                      <select
+                        className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                        value={dualConfig.fps}
+                        onChange={e => setDualConfig({ ...dualConfig, fps: Number(e.target.value) })}
+                      >
+                        {getFpsOptions(selectedRecorder).map(fps => (
+                          <option key={fps} value={fps}>
+                            {fps}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-      <div className="col-span-2 px-2">
-        <select
-          className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
-          value={dualConfig.qual}
-          onChange={e => setDualConfig({ ...dualConfig, qual: e.target.value })}
-        >
-          {Object.keys(QUALITY_MULTIPLIER).map(q => {
-  return (
-    <option key={q} value={q}>
-      {q}
-    </option>
-  );
-})}
-        </select>
-      </div>
+                    <div className="col-span-2 px-2">
+                      <select
+                        className="w-full bg-white border border-slate-200 rounded-md py-1 px-1.5 text-[11px] font-bold text-center"
+                        value={dualConfig.qual}
+                        onChange={e => setDualConfig({ ...dualConfig, qual: e.target.value })}
+                      >
+                        {Object.keys(QUALITY_MULTIPLIER).map(q => {
+                          return (
+                            <option key={q} value={q}>
+                              {q}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
 
-      <div className="col-span-1 px-2">
-        <input
-          type="number"
-          value={dualConfig.hours}
-          disabled
-          className="w-full bg-slate-100 border border-slate-200 rounded-md h-[28px] px-1.5 text-[11px] font-bold text-center"
-        />
-      </div>
+                    <div className="col-span-1 px-2">
+                      <input
+                        type="number"
+                        value={dualConfig.hours}
+                        disabled
+                        className="w-full bg-slate-100 border border-slate-200 rounded-md h-[28px] px-1.5 text-[11px] font-bold text-center"
+                      />
+                    </div>
 
-      <div className="col-span-1 text-right">
-        <span className="text-[10px] font-black text-slate-600">
-          {calcMbps(dualConfig, useIC).toFixed(1)}
-        </span>
-      </div>
-    </div>
-  </>
-)}
+                    <div className="col-span-1 text-right">
+                      <span className="text-[10px] font-black text-slate-600">
+                        {calcMbps(dualConfig, useIC).toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex gap-3">
-              <button 
-                onClick={handleAddOrUpdateCamera} 
+              <button
+                onClick={handleAddOrUpdateCamera}
                 className={`flex-1 py-3.5 rounded-xl font-black text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 uppercase ${editingId ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-[#F58026] hover:bg-[#D96F1F] text-white'}`}
               >
-                {editingId ? <><Save size={16} /> Update Group</> : <><Plus size={16} /> Add to list</>}
+                {editingId ? (
+                  <>
+                    <Save size={16} /> Update Group
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} /> Add to list
+                  </>
+                )}
               </button>
               {editingId && (
-                <button 
+                <button
                   onClick={resetInputForm}
                   className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase transition-all"
                 >
@@ -1656,167 +1650,155 @@ setDualConfig(camera.dual ?? {
 
           {/* Deployed Groups Section */}
           <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-<div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-    Deployed Groups
-  </span>
+            <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Deployed Groups</span>
 
-  <div className="flex items-center gap-2 text-[10px] font-black">
-    <span className="text-back-600">
-      {cameras.length} Groups
-    </span>
-    <span className="text-slate-300">·</span>
-    <span className="text-slate-700">
-      {totals.totalDailyGB.toFixed(1)} GB
-      <span className="text-[8px] text-slate-400 font-bold ml-1">
-        / Day
-      </span>
-    </span>
-  </div>
-</div>
-
-              <div
-                ref={deployedGroupsRef}
-                className={`divide-y divide-slate-50 max-h-[400px] ${
-                  editingId ? "overflow-hidden" : "overflow-y-auto"
-                }`}
-              >
-                 {cameras.map(c => {
-                    const tMbps =calcGroupMbps({
-                      ...c.time,
-                      type: c.type,
-                      useIC: c.useIC
-                    })
-                     
-
-                    const eMbps = 
-                       calcGroupMbps({
-                          ...c.event,
-                          type: c.type,
-                          useIC: c.useIC
-                        },)
-                    const dMbps = c.useDualTrackRecording && c.dual? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }): 0;
-
-const dailyGB = (((tMbps * 3600 * c.time.hours) + (eMbps * 3600 * c.event.hours) + (dMbps * 3600 * (c.dual?.hours || 0))) * c.qty) / 8 / 1024;
-                   const isEditing = editingId === c.id;
-
-                   return (
-                     <div
-                        key={c.id}
-                        className={`px-6 py-4 flex items-center justify-between transition-colors ${
-                          editingId ? '' : 'hover:bg-slate-50'} ${
-                            isEditing ? 'bg-blue-100 shadow-[-4px_0_0_0_#3b82f6_inset]' : ''
-                            }`}
-                      >
-                       <div className="flex items-center gap-4">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isEditing ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
-                            <Layers size={18} />
-                          </div>
-                          <div>
-                             <p className="text-xs font-black text-slate-800">
-  {c.title && (
-    <span className="text-slate-900 mr-1">
-      {c.title}
-    </span>
-  )}
-
-  <span className="text-blue-900 ml-6">
-    {c.type} × {c.qty}
-  </span>
-
-  <span className="text-[11px] text-slate-800 ml-2">
-    ({c.sceneLabel})
-  </span>
-
-  {c.useIC && (
-  <span className="text-[9px] font-bold text-orange-600 mt-0.5">
-    - Use Intelligent Codec</span>
-
-)}
-</p>
-                             <div className="mt-2 border border-slate-100 rounded-lg bg-slate-50 px-3 py-2">
-  {/* Header */}
-  <div className="grid grid-cols-12 text-[8px] font-black text-slate-400 uppercase mb-1">
-    <div className="col-span-1">Rec</div>
-    <div className="col-span-2 text-center">Codec</div>
-    <div className="col-span-3">Resolution</div>
-    <div className="col-span-1 text-center">FPS</div>
-    <div className="col-span-2 text-center">Quality</div>
-    <div className="col-span-1 text-center">Hours</div>
-    <div className="col-span-2 text-right">Mbps</div>
-  </div>
-
-  <SummaryRow
-    label="HQ"
-    icon={<Clock size={10} />}
-    color="text-blue-500"
-    cfg={c.time}
-    mbps={tMbps}
-  />
-
-  {SHOW_EVENT_CONFIG && (
-    <SummaryRow
-      label="EVENT"
-      icon={<Zap size={10} />}
-      color="text-amber-500"
-      cfg={c.event}
-      mbps={eMbps}
-    />
-  )}
-  {c.useDualTrackRecording && (
-    <SummaryRow
-      label="LT"
-      icon={<Layers size={10} />}
-      color="text-purple-500"
-      cfg={c.dual}
-      mbps={dMbps}
-    />
-  )}
-</div>
-                          </div>
-                       </div>
-                       <div className="flex items-center gap-3">
-                          <div className="text-right mr-3">
-                             <p className="text-sm font-black text-slate-700">{dailyGB.toFixed(1)} GB</p>
-                             <p className="text-[8px] font-bold text-slate-300 uppercase">Per Day</p>
-                          </div>
-                          
-                          <button
-                            onClick={() => handleEdit(c)}
-                            disabled={!!editingId}
-                            className={`p-1.5 rounded-md transition-all ${
-                              editingId
-                              ? 'text-slate-200 cursor-not-allowed'
-                              : 'text-slate-300 hover:text-blue-500 hover:bg-blue-50'
-                            }`}
-                            title="Edit"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-
-                          <button
-                            onClick={() => setCameras(cameras.filter(item => item.id !== c.id))}
-                            disabled={!!editingId}
-                            className={`p-1.5 rounded-md transition-all ${
-                              editingId
-                              ? 'text-slate-200 cursor-not-allowed'
-                              : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'
-                            }`}
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                       </div>
-                     </div>
-                   );
-                 })}
-                 {cameras.length === 0 && (
-                   <div className="py-12 text-center text-slate-300">
-                     <Monitor size={48} className="mx-auto mb-2 opacity-20" />
-                     <p className="text-[10px] font-bold uppercase tracking-widest">No cameras added</p>
-                   </div>
-                 )}
+              <div className="flex items-center gap-2 text-[10px] font-black">
+                <span className="text-back-600">{cameras.length} Groups</span>
+                <span className="text-slate-300">·</span>
+                <span className="text-slate-700">
+                  {totals.totalDailyGB.toFixed(1)} GB
+                  <span className="text-[8px] text-slate-400 font-bold ml-1">/ Day</span>
+                </span>
               </div>
+            </div>
+
+            <div
+              ref={deployedGroupsRef}
+              className={`divide-y divide-slate-50 max-h-[400px] ${editingId ? 'overflow-hidden' : 'overflow-y-auto'}`}
+            >
+              {cameras.map(c => {
+                const tMbps = calcGroupMbps({
+                  ...c.time,
+                  type: c.type,
+                  useIC: c.useIC,
+                });
+
+                const eMbps = calcGroupMbps({
+                  ...c.event,
+                  type: c.type,
+                  useIC: c.useIC,
+                });
+                const dMbps =
+                  c.useDualTrackRecording && c.dual ? calcGroupMbps({ ...c.dual, type: c.type, useIC: c.useIC }) : 0;
+
+                const dailyGB =
+                  ((tMbps * 3600 * c.time.hours + eMbps * 3600 * c.event.hours + dMbps * 3600 * (c.dual?.hours || 0)) *
+                    c.qty) /
+                  8 /
+                  1024;
+                const isEditing = editingId === c.id;
+
+                return (
+                  <div
+                    key={c.id}
+                    className={`px-6 py-4 flex items-center justify-between transition-colors ${
+                      editingId ? '' : 'hover:bg-slate-50'
+                    } ${isEditing ? 'bg-blue-100 shadow-[-4px_0_0_0_#3b82f6_inset]' : ''}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center ${isEditing ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}
+                      >
+                        <Layers size={18} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-800">
+                          {c.title && <span className="text-slate-900 mr-1">{c.title}</span>}
+
+                          <span className="text-blue-900 ml-6">
+                            {c.type} × {c.qty}
+                          </span>
+
+                          <span className="text-[11px] text-slate-800 ml-2">({c.sceneLabel})</span>
+
+                          {c.useIC && (
+                            <span className="text-[9px] font-bold text-orange-600 mt-0.5">- Use Intelligent Codec</span>
+                          )}
+                        </p>
+                        <div className="mt-2 border border-slate-100 rounded-lg bg-slate-50 px-3 py-2">
+                          {/* Header */}
+                          <div className="grid grid-cols-12 text-[8px] font-black text-slate-400 uppercase mb-1">
+                            <div className="col-span-1">Rec</div>
+                            <div className="col-span-2 text-center">Codec</div>
+                            <div className="col-span-3">Resolution</div>
+                            <div className="col-span-1 text-center">FPS</div>
+                            <div className="col-span-2 text-center">Quality</div>
+                            <div className="col-span-1 text-center">Hours</div>
+                            <div className="col-span-2 text-right">Mbps</div>
+                          </div>
+
+                          <SummaryRow
+                            label="HQ"
+                            icon={<Clock size={10} />}
+                            color="text-blue-500"
+                            cfg={c.time}
+                            mbps={tMbps}
+                          />
+
+                          {SHOW_EVENT_CONFIG && (
+                            <SummaryRow
+                              label="EVENT"
+                              icon={<Zap size={10} />}
+                              color="text-amber-500"
+                              cfg={c.event}
+                              mbps={eMbps}
+                            />
+                          )}
+                          {c.useDualTrackRecording && (
+                            <SummaryRow
+                              label="LT"
+                              icon={<Layers size={10} />}
+                              color="text-purple-500"
+                              cfg={c.dual}
+                              mbps={dMbps}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right mr-3">
+                        <p className="text-sm font-black text-slate-700">{dailyGB.toFixed(1)} GB</p>
+                        <p className="text-[8px] font-bold text-slate-300 uppercase">Per Day</p>
+                      </div>
+
+                      <button
+                        onClick={() => handleEdit(c)}
+                        disabled={!!editingId}
+                        className={`p-1.5 rounded-md transition-all ${
+                          editingId
+                            ? 'text-slate-200 cursor-not-allowed'
+                            : 'text-slate-300 hover:text-blue-500 hover:bg-blue-50'
+                        }`}
+                        title="Edit"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => setCameras(cameras.filter(item => item.id !== c.id))}
+                        disabled={!!editingId}
+                        className={`p-1.5 rounded-md transition-all ${
+                          editingId
+                            ? 'text-slate-200 cursor-not-allowed'
+                            : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'
+                        }`}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {cameras.length === 0 && (
+                <div className="py-12 text-center text-slate-300">
+                  <Monitor size={48} className="mx-auto mb-2 opacity-20" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">No cameras added</p>
+                </div>
+              )}
+            </div>
           </section>
         </div>
       </main>

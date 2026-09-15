@@ -25,7 +25,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
-  "homepage" : "https://parksy1001.github.io/railhead-simple-storage-calculator/",
+  "homepage": "https://parksy1001.github.io/railhead-simple-storage-calculator/",
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -45,6 +45,8 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "eslint": "^8.57.1",
+    "gh-pages": "^6.3.0",
+    "prettier": "^3.9.6"
   }
 }
