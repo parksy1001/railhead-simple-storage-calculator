@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/railhead-simple-storage-calculator/static/css/main.2ca4df72.css",
-    "main.js": "/railhead-simple-storage-calculator/static/js/main.fc501675.js",
+    "main.js": "/railhead-simple-storage-calculator/static/js/main.c7ee4004.js",
     "static/js/239.bf48dcfa.chunk.js": "/railhead-simple-storage-calculator/static/js/239.bf48dcfa.chunk.js",
     "static/js/213.2af809ae.chunk.js": "/railhead-simple-storage-calculator/static/js/213.2af809ae.chunk.js",
     "static/js/455.ae3a8ede.chunk.js": "/railhead-simple-storage-calculator/static/js/455.ae3a8ede.chunk.js",
     "static/js/453.9a667a85.chunk.js": "/railhead-simple-storage-calculator/static/js/453.9a667a85.chunk.js",
     "index.html": "/railhead-simple-storage-calculator/index.html",
     "main.2ca4df72.css.map": "/railhead-simple-storage-calculator/static/css/main.2ca4df72.css.map",
-    "main.fc501675.js.map": "/railhead-simple-storage-calculator/static/js/main.fc501675.js.map",
+    "main.c7ee4004.js.map": "/railhead-simple-storage-calculator/static/js/main.c7ee4004.js.map",
     "239.bf48dcfa.chunk.js.map": "/railhead-simple-storage-calculator/static/js/239.bf48dcfa.chunk.js.map",
     "213.2af809ae.chunk.js.map": "/railhead-simple-storage-calculator/static/js/213.2af809ae.chunk.js.map",
     "455.ae3a8ede.chunk.js.map": "/railhead-simple-storage-calculator/static/js/455.ae3a8ede.chunk.js.map",
@@ -16,6 +16,6 @@
   },
   "entrypoints": [
     "static/css/main.2ca4df72.css",
-    "static/js/main.fc501675.js"
+    "static/js/main.c7ee4004.js"
   ]
 }
