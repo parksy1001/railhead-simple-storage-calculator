@@ -285,20 +285,22 @@ export default function App() {
         tDaily.toFixed(1),
       ]);
 
-      tableBody.push([
-        getGroupLabel(c, idx),
-        c.type,
-        c.qty,
-        c.sceneLabel,
-        'Event',
-        c.event.codec,
-        getResolutionText(c.event),
-        c.event.fps,
-        c.event.qual,
-        c.event.hours,
-        eMbps.toFixed(1),
-        eDaily.toFixed(1),
-      ]);
+      if (SHOW_EVENT_CONFIG) {
+        tableBody.push([
+          getGroupLabel(c, idx),
+          c.type,
+          c.qty,
+          c.sceneLabel,
+          'Event',
+          c.event.codec,
+          getResolutionText(c.event),
+          c.event.fps,
+          c.event.qual,
+          c.event.hours,
+          eMbps.toFixed(1),
+          eDaily.toFixed(1),
+        ]);
+      }
 
       if (c.useDualTrackRecording && c.dual) {
         tableBody.push([
@@ -449,20 +451,22 @@ export default function App() {
         tDaily.toFixed(1),
       ]);
 
-      rows.push([
-        getGroupLabel(c, idx),
-        c.type,
-        c.qty,
-        c.sceneLabel,
-        'Event',
-        c.event.codec,
-        getResolutionText(c.event),
-        c.event.fps,
-        c.event.qual,
-        c.event.hours,
-        eMbps.toFixed(1),
-        eDaily.toFixed(1),
-      ]);
+      if (SHOW_EVENT_CONFIG) {
+        rows.push([
+          getGroupLabel(c, idx),
+          c.type,
+          c.qty,
+          c.sceneLabel,
+          'Event',
+          c.event.codec,
+          getResolutionText(c.event),
+          c.event.fps,
+          c.event.qual,
+          c.event.hours,
+          eMbps.toFixed(1),
+          eDaily.toFixed(1),
+        ]);
+      }
 
       if (c.useDualTrackRecording) {
         rows.push([
