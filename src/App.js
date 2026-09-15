@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   RECORDER_MODEL,
   CAMERA_MODEL,
@@ -21,27 +21,21 @@ import { saveAs } from 'file-saver';
 import {
   Server,
   Camera,
-  HardDrive,
   Trash2,
   Plus,
-  Activity,
   Settings2,
   Clock,
   Zap,
   Database,
   Monitor,
   Layers,
-  RotateCcw,
   Info,
   Edit2,
   Save,
-  X,
   TrendingUp,
 } from 'lucide-react';
 
 const SHOW_EVENT_CONFIG = false;
-
-const eslintTest = 123;
 
 const formatStorageSize = sizeTB => {
   if (sizeTB < 1) {
@@ -92,7 +86,6 @@ const SummaryRow = ({ label, icon, color, cfg, mbps }) => (
 );
 
 const calcGroupMbps = cfg => {
-  // 기존 NVR 계산
   return calcBandwidthMbps({
     res: cfg.res,
     fps: cfg.fps,
@@ -204,7 +197,7 @@ export default function App() {
 
     /* =====================
      TITLE
-  ====================== */
+    ====================== */
     doc.setFontSize(16);
     doc.text('Storage Calculator Result', 105, y, { align: 'center' });
     y += 8;
@@ -216,7 +209,7 @@ export default function App() {
 
     /* =====================
      NVR SUMMARY
-  ====================== */
+    ====================== */
     doc.setFontSize(12);
     doc.text('Recorder Summary', 14, y);
     y += 3;
@@ -250,7 +243,7 @@ export default function App() {
 
     /* =====================
      CAMERA GROUPS
-  ====================== */
+    ====================== */
     doc.setFontSize(12);
     doc.text('Camera Groups', 14, y);
     y += 3;
@@ -634,7 +627,7 @@ export default function App() {
   const [activeSceneId, setActiveSceneId] = useState('');
   const [showRaidTooltip, setShowRaidTooltip] = useState(false);
   const [showStorageTooltip, setShowStorageTooltip] = useState(false);
-  const [useIC, setUseIC] = useState(false); // ✅ Intelligent Codec (Group 단위)
+  const [useIC, setUseIC] = useState(false);
   const [useDualTrackRecording, setUseDualTrackRecording] = useState(true);
 
   useEffect(() => {
@@ -655,25 +648,20 @@ export default function App() {
   useEffect(() => {
     if (!selectedRecorder) return;
 
-    // ① NVR 기준 HDD Qty 옵션 계산
     const options = getHddQtyOptions(selectedRecorder);
 
-    // DR-8xxx → 기본값 2
     if (selectedRecorder.evenHddOnly) {
       if (!options.includes(hddQty)) {
         setHddQty(options.includes(2) ? 2 : options[0]);
-        return; // hddQty 바뀌면 effect 재실행
+        return;
       }
-    }
-    // 그 외 모델
-    else {
+    } else {
       if (!options.includes(hddQty)) {
         setHddQty(options[0]);
         return;
       }
     }
 
-    // ② RAID 최소 디스크 수 검증
     if (raidOption !== 'None' && hddQty < RAID_MIN_DISKS[raidOption]) {
       setRaidOption('None');
     }
@@ -815,7 +803,6 @@ export default function App() {
   };
 
   const handleAddOrUpdateCamera = () => {
-    // ① Channel limit 체크
     const capacityLimit = editingId
       ? totals.totalCh - cameras.find(c => c.id === editingId).qty + camQty
       : totals.totalCh + camQty;
@@ -842,7 +829,7 @@ export default function App() {
       alert('Group title already exists. Please enter a different group title.');
       return;
     }
-    // ② 추가될 카메라 그룹 구성
+
     const newGroup = {
       id: editingId || Math.random().toString(36).substr(2, 9),
       title: groupTitle.trim(),
@@ -877,7 +864,6 @@ export default function App() {
       },
     };
 
-    // ③ Bandwidth 계산
     const newGroupMbps = calcGroupPeakMbps(newGroup);
 
     const currentMbps = editingId
@@ -886,7 +872,6 @@ export default function App() {
 
     const expectedTotalMbps = currentMbps + newGroupMbps;
 
-    // 🚫 Bandwidth HARD LIMIT
     if (expectedTotalMbps > selectedRecorder.maxMbps) {
       alert(
         `Cannot add camera group due to NVR bandwidth limitation.\n\n` +
@@ -897,7 +882,6 @@ export default function App() {
       return;
     }
 
-    // ④ 실제 추가
     if (editingId) {
       setCameras(cameras.map(c => (c.id === editingId ? newGroup : c)));
       setEditingId(null);
@@ -934,7 +918,7 @@ export default function App() {
     setGroupTitle(camera.title || '');
     setCamType(camera.type);
     setCamQty(camera.qty);
-    setUseIC(camera.useIC ?? false); // ✅ 추가
+    setUseIC(camera.useIC ?? false);
     setUseDualTrackRecording(camera.useDualTrackRecording ?? false);
     setDualConfig(
       camera.dual ?? {
@@ -978,8 +962,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-20 font-sans text-slate-900">
-      {/* {editingId && (<div className="fixed inset-0 bg-slate-900/40 z-[55]" />)} */}
-      {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1243,18 +1225,7 @@ export default function App() {
                     placeholder="Enter group title"
                     value={groupTitle}
                     onChange={e => setGroupTitle(e.target.value)}
-                    className="
-        w-36
-        bg-slate-50
-        border border-slate-200
-        rounded-md
-        px-2 py-1
-        text-[10px]
-        font-bold
-        text-slate-500
-        outline-none
-        focus:ring-1 focus:ring-orange-500
-      "
+                    className="w-36 bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-[10px] font-bold text-slate-500 outline-none focus:ring-1 focus:ring-orange-500"
                   />
                 </div>
               </div>
